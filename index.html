@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#6366f1" />
+  <title>Mis Gastos</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 20px 16px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+    }
+
+    header h1 { font-size: 20px; font-weight: 700; }
+    header p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+    .tabs {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 72px;
+      z-index: 9;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .view { display: none; padding: 16px; }
+    .view.active { display: block; }
+
+    /* FORM */
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      margin-bottom: 16px;
+    }
+
+    .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      color: var(--text);
+      background: white;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+
+    .amount-wrap { position: relative; }
+    .amount-wrap .currency {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .amount-wrap input { padding-left: 36px; font-size: 22px; font-weight: 700; }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      margin-top: 8px;
+    }
+
+    /* RESUMEN */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .summary-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      text-align: center;
+    }
+
+    .summary-card .amount {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .summary-card .label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    /* LISTA */
+    .expense-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .expense-item {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .expense-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .expense-info { flex: 1; min-width: 0; }
+    .expense-desc {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .expense-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .expense-amount {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .badge-pending {
+      display: inline-block;
+      background: #fef3c7;
+      color: #d97706;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    .badge-synced {
+      display: inline-block;
+      background: #d1fae5;
+      color: #065f46;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; }
+
+    /* SYNC */
+    .sync-status {
+      background: #ede9fe;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #5b21b6;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .config-input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      background: white;
+      outline: none;
+      margin-top: 6px;
+    }
+
+    .config-input:focus { border-color: var(--primary); }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e293b;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 4px;
+      opacity: 0.5;
+    }
+    .delete-btn:hover { opacity: 1; color: var(--danger); }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .filter-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+
+    .filter-chip.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .steps { counter-reset: steps; }
+    .step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .step-body p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .step-body code {
+      display: block;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      margin-top: 6px;
+      word-break: break-all;
+      color: #4f46e5;
+    }
+
+    select option { font-size: 15px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💸 Mis Gastos</h1>
+  <p id="header-sub">Registra y sincroniza con Google Sheets</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('nuevo')">➕ Nuevo</div>
+  <div class="tab" onclick="showTab('historial')">📋 Historial</div>
+  <div class="tab" onclick="showTab('sincronizar')">🔄 Sincronizar</div>
+</div>
+
+<div id="view-nuevo" class="view active">
+  <div class="card">
+    <h2>Registrar gasto</h2>
+
+    <div class="field">
+      <label>Monto</label>
+      <div class="amount-wrap">
+        <span class="currency" id="currency-symbol">$</span>
+        <input type="number" id="amount" placeholder="0" inputmode="decimal" step="any" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Descripción</label>
+      <input type="text" id="desc" placeholder="¿En qué gastaste?" />
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label>Categoría</label>
+        <select id="category">
+          <option value="🍔 Comida">🍔 Comida</option>
+          <option value="🚗 Transporte">🚗 Transporte</option>
+          <option value="🏠 Hogar">🏠 Hogar</option>
+          <option value="💊 Salud">💊 Salud</option>
+          <option value="👕 Ropa">👕 Ropa</option>
+          <option value="📱 Tecnología">📱 Tecnología</option>
+          <option value="🎭 Entretenimiento">🎭 Entretenimiento</option>
+          <option value="📚 Educación">📚 Educación</option>
+          <option value="✈️ Viajes">✈️ Viajes</option>
+          <option value="💼 Trabajo">💼 Trabajo</option>
+          <option value="🐾 Mascotas">🐾 Mascotas</option>
+          <option value="🎁 Regalos">🎁 Regalos</option>
+          <option value="📦 Otros">📦 Otros</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Método de pago</label>
+        <select id="payment">
+          <option value="💳 Tarjeta">💳 Tarjeta</option>
+          <option value="💵 Efectivo">💵 Efectivo</option>
+          <option value="📲 Transferencia">📲 Transferencia</option>
+          <option value="🏦 Débito">🏦 Débito</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Fecha y hora</label>
+      <input type="datetime-local" id="date" />
+    </div>
+
+    <div class="field">
+      <label>Notas (opcional)</label>
+      <textarea id="notes" rows="2" placeholder="Detalles adicionales..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveExpense()">Guardar gasto</button>
+  </div>
+</div>
+
+<div id="view-historial" class="view">
+  <div class="summary-grid" id="summary-grid">
+    <div class="summary-card">
+      <div class="amount" id="total-hoy">$0</div>
+      <div class="label">Hoy</div>
+    </div>
+    <div class="summary-card">
+      <div class="amount" id="total-mes">$0</div>
+      <div class="label">Este mes</div>
+    </div>
+    <div class="summary-card">
+      <div class="amount" id="total-pendientes">0</div>
+      <div class="label">Sin sincronizar</div>
+    </div>
+    <div class="summary-card">
+      <div class="amount" id="total-registros">0</div>
+      <div class="label">Total registros</div>
+    </div>
+  </div>
+
+  <div class="filter-bar" id="filter-bar">
+    <div class="filter-chip active" onclick="setFilter('todos', this)">Todos</div>
+    <div class="filter-chip" onclick="setFilter('pendientes', this)">⏳ Pendientes</div>
+    <div class="filter-chip" onclick="setFilter('sincronizados', this)">✅ Sincronizados</div>
+  </div>
+
+  <div class="expense-list" id="expense-list">
+    <div class="empty-state">
+      <div class="icon">📭</div>
+      <p>No hay gastos todavía.<br>Registra tu primero arriba.</p>
+    </div>
+  </div>
+</div>
+
+<div id="view-sincronizar" class="view">
+  <div class="card">
+    <h2>Configuración de Google Sheets</h2>
+
+    <div class="sync-status" id="sync-status">
+      <span>⚙️</span>
+      <span id="sync-status-text">Configura tu URL de Google Apps Script para sincronizar</span>
+    </div>
+
+    <div class="field">
+      <label>URL del Apps Script Web App</label>
+      <input class="config-input" type="url" id="script-url"
+        placeholder="https://script.google.com/macros/s/.../exec"
+        oninput="saveConfig()" />
+    </div>
+
+    <div class="field">
+      <label>Moneda</label>
+      <select id="currency" onchange="saveCurrency(this.value)">
+        <option value="COP">🇨🇴 COP (Peso colombiano)</option>
+        <option value="USD">🇺🇸 USD (Dólar)</option>
+        <option value="MXN">🇲🇽 MXN (Peso mexicano)</option>
+        <option value="ARS">🇦🇷 ARS (Peso argentino)</option>
+        <option value="EUR">🇪🇺 EUR (Euro)</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" onclick="syncAll()" id="sync-btn">
+      🔄 Sincronizar gastos pendientes
+    </button>
+    <button class="btn btn-outline" onclick="exportCSV()">
+      📥 Exportar como CSV
+    </button>
+  </div>
+
+  <div class="card">
+    <h2>¿Cómo conectar con Google Sheets?</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Abre Google Sheets y crea una hoja nueva</strong>
+          <p>Dale un nombre como "Mis Gastos 2025".</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Ve a Extensiones → Apps Script</strong>
+          <p>Se abrirá el editor de código de Google.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Borra el código existente y pega el de <code>apps-script.gs</code></strong>
+          <p>El archivo está junto a este HTML. Cópialo completo.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Haz clic en Implementar → Nueva implementación</strong>
+          <p>Tipo: "Aplicación web". Ejecutar como: "Yo". Acceso: "Cualquier usuario". Copia la URL que aparece.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Pega esa URL arriba y listo</strong>
+          <p>Cada vez que sincronices, los gastos van directo a tu hoja.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const STORAGE_KEY = 'gastos_app_v1';
+  const CONFIG_KEY = 'gastos_config_v1';
+  let currentFilter = 'todos';
+
+  const CATEGORY_COLORS = {
+    '🍔 Comida': '#fef3c7',
+    '🚗 Transporte': '#dbeafe',
+    '🏠 Hogar': '#d1fae5',
+    '💊 Salud': '#fce7f3',
+    '👕 Ropa': '#ede9fe',
+    '📱 Tecnología': '#e0f2fe',
+    '🎭 Entretenimiento': '#fef9c3',
+    '✈️ Viajes': '#cffafe',
+    '💼 Trabajo': '#e0e7ff',
+    '🐾 Mascotas': '#fef3c7',
+    '🎁 Regalos': '#fce7f3',
+    '📚 Educación': '#d1fae5',
+    '📦 Otros': '#f1f5f9',
+  };
+
+  const CURRENCY_SYMBOLS = { COP: '$', USD: '$', MXN: '$', ARS: '$', EUR: '€' };
+
+  function getConfig() {
+    return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{"url":"","currency":"COP"}');
+  }
+
+  function getExpenses() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  }
+
+  function saveExpenses(list) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function formatMoney(amount, currency) {
+    currency = currency || getConfig().currency || 'COP';
+    const sym = CURRENCY_SYMBOLS[currency] || '$';
+    if (amount >= 1000000) return sym + (amount/1000000).toFixed(1) + 'M';
+    if (amount >= 1000) return sym + (amount/1000).toFixed(0) + 'k';
+    return sym + Number(amount).toLocaleString('es-CO');
+  }
+
+  function showTab(tab) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + tab).classList.add('active');
+    event.target.classList.add('active');
+    if (tab === 'historial') renderHistory();
+    if (tab === 'sincronizar') loadConfig();
+  }
+
+  function setDefaultDate() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const local = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById('date').value = local;
+  }
+
+  function saveExpense() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const desc = document.getElementById('desc').value.trim();
+    const category = document.getElementById('category').value;
+    const payment = document.getElementById('payment').value;
+    const date = document.getElementById('date').value;
+    const notes = document.getElementById('notes').value.trim();
+
+    if (!amount || amount <= 0) return showToast('⚠️ Ingresa un monto válido');
+    if (!desc) return showToast('⚠️ Agrega una descripción');
+    if (!date) return showToast('⚠️ Selecciona la fecha');
+
+    const expense = {
+      id: Date.now().toString(),
+      amount,
+      desc,
+      category,
+      payment,
+      date,
+      notes,
+      currency: getConfig().currency || 'COP',
+      synced: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    const list = getExpenses();
+    list.unshift(expense);
+    saveExpenses(list);
+
+    document.getElementById('amount').value = '';
+    document.getElementById('desc').value = '';
+    document.getElementById('notes').value = '';
+    setDefaultDate();
+
+    showToast('✅ Gasto guardado');
+    updateHeaderSub();
+  }
+
+  function renderHistory() {
+    const all = getExpenses();
+    const cfg = getConfig();
+
+    const now = new Date();
+    const today = now.toDateString();
+    const thisMonth = now.getMonth() + '-' + now.getFullYear();
+
+    let totalHoy = 0, totalMes = 0, pendientes = 0;
+
+    all.forEach(e => {
+      const d = new Date(e.date);
+      if (d.toDateString() === today) totalHoy += e.amount;
+      if (d.getMonth() + '-' + d.getFullYear() === thisMonth) totalMes += e.amount;
+      if (!e.synced) pendientes++;
+    });
+
+    document.getElementById('total-hoy').textContent = formatMoney(totalHoy);
+    document.getElementById('total-mes').textContent = formatMoney(totalMes);
+    document.getElementById('total-pendientes').textContent = pendientes;
+    document.getElementById('total-registros').textContent = all.length;
+
+    let filtered = all;
+    if (currentFilter === 'pendientes') filtered = all.filter(e => !e.synced);
+    if (currentFilter === 'sincronizados') filtered = all.filter(e => e.synced);
+
+    const list = document.getElementById('expense-list');
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No hay gastos en esta vista.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(e => {
+      const d = new Date(e.date);
+      const dateStr = d.toLocaleDateString('es-CO', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+      const color = CATEGORY_COLORS[e.category] || '#f1f5f9';
+      const icon = e.category.split(' ')[0];
+      const badge = e.synced
+        ? '<span class="badge-synced">✅ Sheets</span>'
+        : '<span class="badge-pending">⏳ Pendiente</span>';
+
+      return `
+        <div class="expense-item" id="item-${e.id}">
+          <div class="expense-icon" style="background:${color}">${icon}</div>
+          <div class="expense-info">
+            <div class="expense-desc">${e.desc}</div>
+            <div class="expense-meta">${e.category} · ${e.payment}<br>${dateStr} ${badge}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="expense-amount">${formatMoney(e.amount, e.currency)}</div>
+            <button class="delete-btn" onclick="deleteExpense('${e.id}')">🗑</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function deleteExpense(id) {
+    const list = getExpenses().filter(e => e.id !== id);
+    saveExpenses(list);
+    renderHistory();
+    showToast('🗑 Gasto eliminado');
+  }
+
+  function setFilter(filter, el) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    renderHistory();
+  }
+
+  function loadConfig() {
+    const cfg = getConfig();
+    document.getElementById('script-url').value = cfg.url || '';
+    document.getElementById('currency').value = cfg.currency || 'COP';
+    updateSyncStatus();
+  }
+
+  function saveConfig() {
+    const cfg = getConfig();
+    cfg.url = document.getElementById('script-url').value.trim();
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+    updateSyncStatus();
+  }
+
+  function saveCurrency(val) {
+    const cfg = getConfig();
+    cfg.currency = val;
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+    document.getElementById('currency-symbol').textContent = CURRENCY_SYMBOLS[val] || '$';
+  }
+
+  function updateSyncStatus() {
+    const cfg = getConfig();
+    const st = document.getElementById('sync-status');
+    const txt = document.getElementById('sync-status-text');
+    const pending = getExpenses().filter(e => !e.synced).length;
+
+    if (!cfg.url) {
+      st.style.background = '#fee2e2';
+      st.style.color = '#991b1b';
+      st.querySelector('span').textContent = '⚠️';
+      txt.textContent = 'Sin URL configurada. Sigue los pasos de abajo.';
+    } else {
+      st.style.background = '#d1fae5';
+      st.style.color = '#065f46';
+      st.querySelector('span').textContent = '✅';
+      txt.textContent = `Conectado · ${pending} gasto(s) pendiente(s) de sincronizar`;
+    }
+  }
+
+  async function syncAll() {
+    const cfg = getConfig();
+    if (!cfg.url) return showToast('⚠️ Configura la URL primero');
+
+    const pending = getExpenses().filter(e => !e.synced);
+    if (pending.length === 0) return showToast('✅ Todo está sincronizado');
+
+    const btn = document.getElementById('sync-btn');
+    btn.textContent = '⏳ Sincronizando...';
+    btn.disabled = true;
+
+    let success = 0;
+    const all = getExpenses();
+
+    for (const expense of pending) {
+      try {
+        await fetch(cfg.url, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: expense.id,
+            fecha: expense.date,
+            descripcion: expense.desc,
+            categoria: expense.category.replace(/^\S+\s/, ''),
+            monto: expense.amount,
+            moneda: expense.currency,
+            metodo_pago: expense.payment.replace(/^\S+\s/, ''),
+            notas: expense.notes,
+            registrado_en: expense.createdAt,
+          }),
+        });
+        const idx = all.findIndex(e => e.id === expense.id);
+        if (idx >= 0) all[idx].synced = true;
+        success++;
+      } catch (err) {
+        console.error('Error sincronizando', expense.id, err);
+      }
+    }
+
+    saveExpenses(all);
+    btn.textContent = '🔄 Sincronizar gastos pendientes';
+    btn.disabled = false;
+    updateSyncStatus();
+    showToast(`✅ ${success} gasto(s) enviados a Sheets`);
+  }
+
+  function exportCSV() {
+    const expenses = getExpenses();
+    if (expenses.length === 0) return showToast('No hay gastos para exportar');
+
+    const headers = ['ID','Fecha','Descripción','Categoría','Monto','Moneda','Método de pago','Notas','Sincronizado'];
+    const rows = expenses.map(e => [
+      e.id, e.date, e.desc,
+      e.category.replace(/^\S+\s/, ''),
+      e.amount, e.currency,
+      e.payment.replace(/^\S+\s/, ''),
+      e.notes || '', e.synced ? 'Sí' : 'No'
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `gastos_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    showToast('📥 CSV descargado');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function updateHeaderSub() {
+    const all = getExpenses();
+    const pending = all.filter(e => !e.synced).length;
+    document.getElementById('header-sub').textContent =
+      `${all.length} registros · ${pending} pendiente(s) de sincronizar`;
+  }
+
+  // Init
+  setDefaultDate();
+  updateHeaderSub();
+  loadConfig();
+  document.getElementById('currency-symbol').textContent =
+    CURRENCY_SYMBOLS[getConfig().currency || 'COP'] || '$';
+</script>
+</body>
+</html>
