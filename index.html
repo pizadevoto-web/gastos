@@ -52,9 +52,9 @@
 
     .tab {
       flex: 1;
-      padding: 12px;
+      padding: 10px 4px;
       text-align: center;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--muted);
       cursor: pointer;
@@ -70,7 +70,6 @@
     .view { display: none; padding: 16px; }
     .view.active { display: block; }
 
-    /* FORM */
     .card {
       background: var(--card);
       border-radius: 16px;
@@ -142,13 +141,17 @@
     .btn-primary { background: var(--primary); color: white; }
     .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
     .btn-primary:active { transform: translateY(0); }
-
-    .btn-success { background: var(--success); color: white; }
     .btn-outline {
       background: white;
       color: var(--primary);
       border: 2px solid var(--primary);
       margin-top: 8px;
+    }
+    .btn-sm {
+      width: auto;
+      padding: 10px 18px;
+      font-size: 14px;
+      border-radius: 10px;
     }
 
     /* RESUMEN */
@@ -277,6 +280,74 @@
 
     .config-input:focus { border-color: var(--primary); }
 
+    /* CATEGORÍAS */
+    .cat-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .cat-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .cat-chip-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.5;
+      padding: 0;
+    }
+    .cat-chip-del:hover { opacity: 1; }
+
+    .cat-add-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .cat-emoji-input {
+      width: 58px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 20px;
+      text-align: center;
+      outline: none;
+      flex-shrink: 0;
+    }
+    .cat-emoji-input:focus { border-color: var(--primary); }
+
+    .cat-name-input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      outline: none;
+    }
+    .cat-name-input:focus { border-color: var(--primary); }
+
+    .cat-add-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 20px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
     .toast {
       position: fixed;
       bottom: 90px;
@@ -381,11 +452,13 @@
 </header>
 
 <div class="tabs">
-  <div class="tab active" onclick="showTab('nuevo')">➕ Nuevo</div>
-  <div class="tab" onclick="showTab('historial')">📋 Historial</div>
-  <div class="tab" onclick="showTab('sincronizar')">🔄 Sincronizar</div>
+  <div class="tab active" onclick="showTab('nuevo', this)">➕ Nuevo</div>
+  <div class="tab" onclick="showTab('historial', this)">📋 Historial</div>
+  <div class="tab" onclick="showTab('categorias', this)">🏷️ Categ.</div>
+  <div class="tab" onclick="showTab('sincronizar', this)">🔄 Sync</div>
 </div>
 
+<!-- NUEVO -->
 <div id="view-nuevo" class="view active">
   <div class="card">
     <h2>Registrar gasto</h2>
@@ -406,21 +479,7 @@
     <div class="row-2">
       <div class="field">
         <label>Categoría</label>
-        <select id="category">
-          <option value="🍔 Comida">🍔 Comida</option>
-          <option value="🚗 Transporte">🚗 Transporte</option>
-          <option value="🏠 Hogar">🏠 Hogar</option>
-          <option value="💊 Salud">💊 Salud</option>
-          <option value="👕 Ropa">👕 Ropa</option>
-          <option value="📱 Tecnología">📱 Tecnología</option>
-          <option value="🎭 Entretenimiento">🎭 Entretenimiento</option>
-          <option value="📚 Educación">📚 Educación</option>
-          <option value="✈️ Viajes">✈️ Viajes</option>
-          <option value="💼 Trabajo">💼 Trabajo</option>
-          <option value="🐾 Mascotas">🐾 Mascotas</option>
-          <option value="🎁 Regalos">🎁 Regalos</option>
-          <option value="📦 Otros">📦 Otros</option>
-        </select>
+        <select id="category"></select>
       </div>
 
       <div class="field">
@@ -448,8 +507,9 @@
   </div>
 </div>
 
+<!-- HISTORIAL -->
 <div id="view-historial" class="view">
-  <div class="summary-grid" id="summary-grid">
+  <div class="summary-grid">
     <div class="summary-card">
       <div class="amount" id="total-hoy">$0</div>
       <div class="label">Hoy</div>
@@ -468,7 +528,7 @@
     </div>
   </div>
 
-  <div class="filter-bar" id="filter-bar">
+  <div class="filter-bar">
     <div class="filter-chip active" onclick="setFilter('todos', this)">Todos</div>
     <div class="filter-chip" onclick="setFilter('pendientes', this)">⏳ Pendientes</div>
     <div class="filter-chip" onclick="setFilter('sincronizados', this)">✅ Sincronizados</div>
@@ -477,14 +537,35 @@
   <div class="expense-list" id="expense-list">
     <div class="empty-state">
       <div class="icon">📭</div>
-      <p>No hay gastos todavía.<br>Registra tu primero arriba.</p>
+      <p>No hay gastos todavía.<br>Registra el primero arriba.</p>
     </div>
   </div>
 </div>
 
+<!-- CATEGORÍAS -->
+<div id="view-categorias" class="view">
+  <div class="card">
+    <h2>Mis categorías</h2>
+    <div class="cat-grid" id="cat-grid"></div>
+
+    <div class="field" style="margin-bottom:10px">
+      <label>Agregar categoría</label>
+    </div>
+    <div class="cat-add-row">
+      <input type="text" class="cat-emoji-input" id="cat-emoji" placeholder="🙂" maxlength="2" />
+      <input type="text" class="cat-name-input" id="cat-name" placeholder="Nombre de la categoría" />
+      <button class="cat-add-btn" onclick="addCategory()">＋</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px">
+      Toca ✕ en cualquier categoría para eliminarla. Los gastos ya registrados conservan su categoría original.
+    </p>
+  </div>
+</div>
+
+<!-- SINCRONIZAR -->
 <div id="view-sincronizar" class="view">
   <div class="card">
-    <h2>Configuración de Google Sheets</h2>
+    <h2>Google Sheets</h2>
 
     <div class="sync-status" id="sync-status">
       <span>⚙️</span>
@@ -537,22 +618,22 @@
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-body">
-          <strong>Borra el código existente y pega el de <code>apps-script.gs</code></strong>
-          <p>El archivo está junto a este HTML. Cópialo completo.</p>
+          <strong>Pega el código del archivo apps-script.gs</strong>
+          <p>Está en el repositorio junto a este archivo.</p>
         </div>
       </div>
       <div class="step">
         <div class="step-num">4</div>
         <div class="step-body">
-          <strong>Haz clic en Implementar → Nueva implementación</strong>
-          <p>Tipo: "Aplicación web". Ejecutar como: "Yo". Acceso: "Cualquier usuario". Copia la URL que aparece.</p>
+          <strong>Implementar → Nueva implementación</strong>
+          <p>Tipo: Aplicación web · Ejecutar como: Yo · Acceso: Cualquier usuario. Copia la URL.</p>
         </div>
       </div>
       <div class="step">
         <div class="step-num">5</div>
         <div class="step-body">
           <strong>Pega esa URL arriba y listo</strong>
-          <p>Cada vez que sincronices, los gastos van directo a tu hoja.</p>
+          <p>Toca "Sincronizar" y los gastos van directo a tu hoja.</p>
         </div>
       </div>
     </div>
@@ -562,28 +643,36 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const STORAGE_KEY = 'gastos_app_v1';
-  const CONFIG_KEY = 'gastos_config_v1';
-  let currentFilter = 'todos';
+  const STORAGE_KEY    = 'gastos_app_v1';
+  const CONFIG_KEY     = 'gastos_config_v1';
+  const CATEGORIES_KEY = 'gastos_categories_v1';
 
-  const CATEGORY_COLORS = {
-    '🍔 Comida': '#fef3c7',
-    '🚗 Transporte': '#dbeafe',
-    '🏠 Hogar': '#d1fae5',
-    '💊 Salud': '#fce7f3',
-    '👕 Ropa': '#ede9fe',
-    '📱 Tecnología': '#e0f2fe',
-    '🎭 Entretenimiento': '#fef9c3',
-    '✈️ Viajes': '#cffafe',
-    '💼 Trabajo': '#e0e7ff',
-    '🐾 Mascotas': '#fef3c7',
-    '🎁 Regalos': '#fce7f3',
-    '📚 Educación': '#d1fae5',
-    '📦 Otros': '#f1f5f9',
-  };
+  const DEFAULT_CATEGORIES = [
+    { emoji: '🍔', name: 'Comida',          color: '#fef3c7' },
+    { emoji: '🚗', name: 'Transporte',      color: '#dbeafe' },
+    { emoji: '🏠', name: 'Hogar',           color: '#d1fae5' },
+    { emoji: '💊', name: 'Salud',           color: '#fce7f3' },
+    { emoji: '👕', name: 'Ropa',            color: '#ede9fe' },
+    { emoji: '📱', name: 'Tecnología',      color: '#e0f2fe' },
+    { emoji: '🎭', name: 'Entretenimiento', color: '#fef9c3' },
+    { emoji: '📚', name: 'Educación',       color: '#d1fae5' },
+    { emoji: '✈️', name: 'Viajes',          color: '#cffafe' },
+    { emoji: '💼', name: 'Trabajo',         color: '#e0e7ff' },
+    { emoji: '🐾', name: 'Mascotas',        color: '#fef3c7' },
+    { emoji: '🎁', name: 'Regalos',         color: '#fce7f3' },
+    { emoji: '📦', name: 'Otros',           color: '#f1f5f9' },
+  ];
+
+  const COLOR_PALETTE = [
+    '#fef3c7','#dbeafe','#d1fae5','#fce7f3','#ede9fe',
+    '#e0f2fe','#fef9c3','#cffafe','#e0e7ff','#fecaca',
+  ];
 
   const CURRENCY_SYMBOLS = { COP: '$', USD: '$', MXN: '$', ARS: '$', EUR: '€' };
 
+  let currentFilter = 'todos';
+
+  // ── Storage helpers ──────────────────────────────────────
   function getConfig() {
     return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{"url":"","currency":"COP"}');
   }
@@ -596,50 +685,127 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   }
 
+  function getCategories() {
+    const stored = localStorage.getItem(CATEGORIES_KEY);
+    return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
+  }
+
+  function saveCategories(list) {
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(list));
+  }
+
+  function getCategoryColor(label) {
+    const cats = getCategories();
+    const match = cats.find(c => `${c.emoji} ${c.name}` === label);
+    return match ? match.color : '#f1f5f9';
+  }
+
+  // ── Category select ──────────────────────────────────────
+  function renderCategorySelect() {
+    const sel = document.getElementById('category');
+    const prev = sel.value;
+    const cats = getCategories();
+    sel.innerHTML = cats.map(c =>
+      `<option value="${c.emoji} ${c.name}">${c.emoji} ${c.name}</option>`
+    ).join('');
+    if (prev && cats.find(c => `${c.emoji} ${c.name}` === prev)) sel.value = prev;
+  }
+
+  // ── Category manager ─────────────────────────────────────
+  function renderCategoryManager() {
+    const cats = getCategories();
+    const grid = document.getElementById('cat-grid');
+
+    if (cats.length === 0) {
+      grid.innerHTML = `<p style="color:var(--muted);font-size:13px">Sin categorías. Agrega la primera abajo.</p>`;
+      return;
+    }
+
+    grid.innerHTML = cats.map((c, i) => `
+      <div class="cat-chip" style="background:${c.color}">
+        <span>${c.emoji}</span>
+        <span>${c.name}</span>
+        <button class="cat-chip-del" onclick="deleteCategory(${i})" title="Eliminar">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function addCategory() {
+    const emoji = document.getElementById('cat-emoji').value.trim();
+    const name  = document.getElementById('cat-name').value.trim();
+
+    if (!emoji) return showToast('⚠️ Pon un emoji primero');
+    if (!name)  return showToast('⚠️ Escribe un nombre');
+
+    const cats = getCategories();
+    const label = `${emoji} ${name}`;
+    if (cats.find(c => `${c.emoji} ${c.name}` === label)) return showToast('Ya existe esa categoría');
+
+    const color = COLOR_PALETTE[cats.length % COLOR_PALETTE.length];
+    cats.push({ emoji, name, color });
+    saveCategories(cats);
+
+    document.getElementById('cat-emoji').value = '';
+    document.getElementById('cat-name').value  = '';
+
+    renderCategoryManager();
+    renderCategorySelect();
+    showToast(`✅ "${emoji} ${name}" agregada`);
+  }
+
+  function deleteCategory(index) {
+    const cats = getCategories();
+    const removed = cats.splice(index, 1)[0];
+    saveCategories(cats);
+    renderCategoryManager();
+    renderCategorySelect();
+    showToast(`🗑 "${removed.emoji} ${removed.name}" eliminada`);
+  }
+
+  // ── Formatting ───────────────────────────────────────────
   function formatMoney(amount, currency) {
     currency = currency || getConfig().currency || 'COP';
     const sym = CURRENCY_SYMBOLS[currency] || '$';
-    if (amount >= 1000000) return sym + (amount/1000000).toFixed(1) + 'M';
-    if (amount >= 1000) return sym + (amount/1000).toFixed(0) + 'k';
+    if (amount >= 1000000) return sym + (amount / 1000000).toFixed(1) + 'M';
+    if (amount >= 1000)    return sym + (amount / 1000).toFixed(0) + 'k';
     return sym + Number(amount).toLocaleString('es-CO');
   }
 
-  function showTab(tab) {
+  // ── Tabs ─────────────────────────────────────────────────
+  function showTab(tab, el) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('view-' + tab).classList.add('active');
-    event.target.classList.add('active');
-    if (tab === 'historial') renderHistory();
+    el.classList.add('active');
+    if (tab === 'historial')   renderHistory();
+    if (tab === 'categorias')  renderCategoryManager();
     if (tab === 'sincronizar') loadConfig();
   }
 
+  // ── Date helper ──────────────────────────────────────────
   function setDefaultDate() {
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
-    const local = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    document.getElementById('date').value = local;
+    document.getElementById('date').value =
+      `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }
 
+  // ── Save expense ─────────────────────────────────────────
   function saveExpense() {
-    const amount = parseFloat(document.getElementById('amount').value);
-    const desc = document.getElementById('desc').value.trim();
+    const amount   = parseFloat(document.getElementById('amount').value);
+    const desc     = document.getElementById('desc').value.trim();
     const category = document.getElementById('category').value;
-    const payment = document.getElementById('payment').value;
-    const date = document.getElementById('date').value;
-    const notes = document.getElementById('notes').value.trim();
+    const payment  = document.getElementById('payment').value;
+    const date     = document.getElementById('date').value;
+    const notes    = document.getElementById('notes').value.trim();
 
     if (!amount || amount <= 0) return showToast('⚠️ Ingresa un monto válido');
-    if (!desc) return showToast('⚠️ Agrega una descripción');
-    if (!date) return showToast('⚠️ Selecciona la fecha');
+    if (!desc)                  return showToast('⚠️ Agrega una descripción');
+    if (!date)                  return showToast('⚠️ Selecciona la fecha');
 
     const expense = {
       id: Date.now().toString(),
-      amount,
-      desc,
-      category,
-      payment,
-      date,
-      notes,
+      amount, desc, category, payment, date, notes,
       currency: getConfig().currency || 'COP',
       synced: false,
       createdAt: new Date().toISOString(),
@@ -650,24 +816,22 @@
     saveExpenses(list);
 
     document.getElementById('amount').value = '';
-    document.getElementById('desc').value = '';
-    document.getElementById('notes').value = '';
+    document.getElementById('desc').value   = '';
+    document.getElementById('notes').value  = '';
     setDefaultDate();
 
     showToast('✅ Gasto guardado');
     updateHeaderSub();
   }
 
+  // ── History ──────────────────────────────────────────────
   function renderHistory() {
-    const all = getExpenses();
-    const cfg = getConfig();
-
-    const now = new Date();
+    const all  = getExpenses();
+    const now  = new Date();
     const today = now.toDateString();
     const thisMonth = now.getMonth() + '-' + now.getFullYear();
 
     let totalHoy = 0, totalMes = 0, pendientes = 0;
-
     all.forEach(e => {
       const d = new Date(e.date);
       if (d.toDateString() === today) totalHoy += e.amount;
@@ -675,13 +839,13 @@
       if (!e.synced) pendientes++;
     });
 
-    document.getElementById('total-hoy').textContent = formatMoney(totalHoy);
-    document.getElementById('total-mes').textContent = formatMoney(totalMes);
+    document.getElementById('total-hoy').textContent        = formatMoney(totalHoy);
+    document.getElementById('total-mes').textContent        = formatMoney(totalMes);
     document.getElementById('total-pendientes').textContent = pendientes;
-    document.getElementById('total-registros').textContent = all.length;
+    document.getElementById('total-registros').textContent  = all.length;
 
     let filtered = all;
-    if (currentFilter === 'pendientes') filtered = all.filter(e => !e.synced);
+    if (currentFilter === 'pendientes')   filtered = all.filter(e => !e.synced);
     if (currentFilter === 'sincronizados') filtered = all.filter(e => e.synced);
 
     const list = document.getElementById('expense-list');
@@ -692,16 +856,16 @@
     }
 
     list.innerHTML = filtered.map(e => {
-      const d = new Date(e.date);
+      const d       = new Date(e.date);
       const dateStr = d.toLocaleDateString('es-CO', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-      const color = CATEGORY_COLORS[e.category] || '#f1f5f9';
-      const icon = e.category.split(' ')[0];
-      const badge = e.synced
+      const color   = getCategoryColor(e.category);
+      const icon    = e.category.split(' ')[0];
+      const badge   = e.synced
         ? '<span class="badge-synced">✅ Sheets</span>'
         : '<span class="badge-pending">⏳ Pendiente</span>';
 
       return `
-        <div class="expense-item" id="item-${e.id}">
+        <div class="expense-item">
           <div class="expense-icon" style="background:${color}">${icon}</div>
           <div class="expense-info">
             <div class="expense-desc">${e.desc}</div>
@@ -711,14 +875,12 @@
             <div class="expense-amount">${formatMoney(e.amount, e.currency)}</div>
             <button class="delete-btn" onclick="deleteExpense('${e.id}')">🗑</button>
           </div>
-        </div>
-      `;
+        </div>`;
     }).join('');
   }
 
   function deleteExpense(id) {
-    const list = getExpenses().filter(e => e.id !== id);
-    saveExpenses(list);
+    saveExpenses(getExpenses().filter(e => e.id !== id));
     renderHistory();
     showToast('🗑 Gasto eliminado');
   }
@@ -730,10 +892,11 @@
     renderHistory();
   }
 
+  // ── Config / Sync ────────────────────────────────────────
   function loadConfig() {
     const cfg = getConfig();
     document.getElementById('script-url').value = cfg.url || '';
-    document.getElementById('currency').value = cfg.currency || 'COP';
+    document.getElementById('currency').value   = cfg.currency || 'COP';
     updateSyncStatus();
   }
 
@@ -752,19 +915,19 @@
   }
 
   function updateSyncStatus() {
-    const cfg = getConfig();
-    const st = document.getElementById('sync-status');
-    const txt = document.getElementById('sync-status-text');
+    const cfg     = getConfig();
+    const st      = document.getElementById('sync-status');
+    const txt     = document.getElementById('sync-status-text');
     const pending = getExpenses().filter(e => !e.synced).length;
 
     if (!cfg.url) {
       st.style.background = '#fee2e2';
-      st.style.color = '#991b1b';
+      st.style.color      = '#991b1b';
       st.querySelector('span').textContent = '⚠️';
       txt.textContent = 'Sin URL configurada. Sigue los pasos de abajo.';
     } else {
       st.style.background = '#d1fae5';
-      st.style.color = '#065f46';
+      st.style.color      = '#065f46';
       st.querySelector('span').textContent = '✅';
       txt.textContent = `Conectado · ${pending} gasto(s) pendiente(s) de sincronizar`;
     }
@@ -779,26 +942,26 @@
 
     const btn = document.getElementById('sync-btn');
     btn.textContent = '⏳ Sincronizando...';
-    btn.disabled = true;
+    btn.disabled    = true;
 
     let success = 0;
-    const all = getExpenses();
+    const all   = getExpenses();
 
     for (const expense of pending) {
       try {
         await fetch(cfg.url, {
           method: 'POST',
-          mode: 'no-cors',
+          mode:   'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            id: expense.id,
-            fecha: expense.date,
-            descripcion: expense.desc,
-            categoria: expense.category.replace(/^\S+\s/, ''),
-            monto: expense.amount,
-            moneda: expense.currency,
-            metodo_pago: expense.payment.replace(/^\S+\s/, ''),
-            notas: expense.notes,
+            id:            expense.id,
+            fecha:         expense.date,
+            descripcion:   expense.desc,
+            categoria:     expense.category.replace(/^\S+\s/, ''),
+            monto:         expense.amount,
+            moneda:        expense.currency,
+            metodo_pago:   expense.payment.replace(/^\S+\s/, ''),
+            notas:         expense.notes,
             registrado_en: expense.createdAt,
           }),
         });
@@ -812,7 +975,7 @@
 
     saveExpenses(all);
     btn.textContent = '🔄 Sincronizar gastos pendientes';
-    btn.disabled = false;
+    btn.disabled    = false;
     updateSyncStatus();
     showToast(`✅ ${success} gasto(s) enviados a Sheets`);
   }
@@ -827,18 +990,20 @@
       e.category.replace(/^\S+\s/, ''),
       e.amount, e.currency,
       e.payment.replace(/^\S+\s/, ''),
-      e.notes || '', e.synced ? 'Sí' : 'No'
+      e.notes || '',
+      e.synced ? 'Sí' : 'No',
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
 
-    const csv = [headers.join(','), ...rows].join('\n');
+    const csv  = [headers.join(','), ...rows].join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
     a.download = `gastos_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     showToast('📥 CSV descargado');
   }
 
+  // ── Toast ────────────────────────────────────────────────
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -847,14 +1012,15 @@
   }
 
   function updateHeaderSub() {
-    const all = getExpenses();
+    const all     = getExpenses();
     const pending = all.filter(e => !e.synced).length;
     document.getElementById('header-sub').textContent =
       `${all.length} registros · ${pending} pendiente(s) de sincronizar`;
   }
 
-  // Init
+  // ── Init ─────────────────────────────────────────────────
   setDefaultDate();
+  renderCategorySelect();
   updateHeaderSub();
   loadConfig();
   document.getElementById('currency-symbol').textContent =
