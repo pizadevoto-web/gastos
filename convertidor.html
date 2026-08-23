@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#6366f1" />
+  <title>MXN ⇄ COP</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --mxn: #10b981;
+      --cop: #f59e0b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--primary);
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      color: white;
+      padding: 22px 18px 18px;
+      box-shadow: 0 2px 12px rgba(99,102,241,0.35);
+    }
+    header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    header p { font-size: 13px; opacity: 0.85; margin-top: 3px; }
+
+    main { padding: 18px 16px 40px; max-width: 480px; margin: 0 auto; width: 100%; flex: 1; }
+
+    .converter {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 8px;
+      box-shadow: 0 4px 24px rgba(15,23,42,0.08);
+      position: relative;
+    }
+
+    .money-box {
+      border-radius: 16px;
+      padding: 18px 18px 16px;
+      transition: background 0.2s;
+    }
+    .money-box.from { background: rgba(16,185,129,0.07); }
+    .money-box.to   { background: rgba(245,158,11,0.08); }
+
+    .money-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .money-label { display: flex; align-items: center; gap: 9px; }
+    .flag {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: grid; place-items: center; font-size: 17px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+      background: #fff;
+    }
+    .money-code { font-size: 15px; font-weight: 700; }
+    .money-name { font-size: 11px; color: var(--muted); }
+
+    .amount {
+      width: 100%; border: none; background: transparent;
+      font-size: 34px; font-weight: 700; color: var(--text);
+      outline: none; padding: 2px 0; letter-spacing: -0.5px;
+    }
+    .amount::placeholder { color: #cbd5e1; }
+    .money-box.to .amount { color: var(--cop); }
+    .money-box.from .amount { color: var(--mxn); }
+
+    .sub { font-size: 12px; color: var(--muted); margin-top: 4px; min-height: 16px; }
+
+    .swap-wrap { position: relative; height: 0; z-index: 2; }
+    .swap {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 46px; height: 46px; border-radius: 50%;
+      background: var(--primary); color: #fff; border: 4px solid var(--card);
+      display: grid; place-items: center; cursor: pointer;
+      box-shadow: 0 3px 10px rgba(99,102,241,0.4);
+      transition: transform 0.25s ease, background 0.2s;
+      font-size: 20px;
+    }
+    .swap:active { transform: translate(-50%, -50%) scale(0.9); }
+    .swap.spin { transform: translate(-50%, -50%) rotate(180deg); }
+
+    .chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .chip {
+      flex: 1; min-width: 60px; text-align: center;
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 10px 6px; font-size: 13px; font-weight: 600;
+      color: var(--muted); cursor: pointer; transition: all 0.15s;
+    }
+    .chip:active { transform: scale(0.95); border-color: var(--primary); color: var(--primary); }
+
+    .actions { display: flex; gap: 10px; margin-top: 12px; }
+    .btn {
+      flex: 1; border: none; border-radius: 12px; padding: 13px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: transform 0.12s, background 0.2s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-ghost { background: var(--card); color: var(--muted); border: 1.5px solid var(--border); }
+
+    .rate-card {
+      margin-top: 18px; background: var(--card); border-radius: 16px;
+      padding: 16px; box-shadow: 0 1px 6px rgba(15,23,42,0.06);
+    }
+    .rate-row { display: flex; align-items: center; justify-content: space-between; }
+    .rate-main { font-size: 15px; font-weight: 700; }
+    .rate-main span { color: var(--primary); }
+    .rate-meta { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mxn); }
+    .dot.stale { background: var(--cop); }
+    .dot.err { background: #ef4444; }
+
+    .refresh {
+      background: rgba(99,102,241,0.1); color: var(--primary);
+      border: none; border-radius: 10px; padding: 9px 12px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .refresh:active { transform: scale(0.95); }
+    .refresh svg { transition: transform 0.6s; }
+    .refresh.loading svg { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .manual {
+      margin-top: 12px; display: none; align-items: center; gap: 10px;
+      background: rgba(245,158,11,0.08); border-radius: 12px; padding: 12px 14px;
+    }
+    .manual.open { display: flex; }
+    .manual label { font-size: 12px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+    .manual input {
+      flex: 1; border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 8px 10px; font-size: 14px; outline: none; width: 100%;
+    }
+    .manual input:focus { border-color: var(--primary); }
+    .link { font-size: 12px; color: var(--primary); font-weight: 600; cursor: pointer; text-align: center; margin-top: 12px; }
+
+    .toast {
+      position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 30px;
+      font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 50;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Convertidor MXN ⇄ COP</h1>
+    <p>Peso mexicano a peso colombiano</p>
+  </header>
+
+  <main>
+    <div class="converter">
+      <div class="money-box from" id="boxFrom">
+        <div class="money-head">
+          <div class="money-label">
+            <div class="flag" id="flagFrom">🇲🇽</div>
+            <div>
+              <div class="money-code" id="codeFrom">MXN</div>
+              <div class="money-name" id="nameFrom">Peso mexicano</div>
+            </div>
+          </div>
+        </div>
+        <input class="amount" id="amtFrom" type="text" inputmode="decimal" placeholder="0" autocomplete="off" />
+        <div class="sub" id="subFrom"></div>
+      </div>
+
+      <div class="swap-wrap">
+        <button class="swap" id="swap" aria-label="Invertir">⇅</button>
+      </div>
+
+      <div class="money-box to" id="boxTo">
+        <div class="money-head">
+          <div class="money-label">
+            <div class="flag" id="flagTo">🇨🇴</div>
+            <div>
+              <div class="money-code" id="codeTo">COP</div>
+              <div class="money-name" id="nameTo">Peso colombiano</div>
+            </div>
+          </div>
+        </div>
+        <input class="amount" id="amtTo" type="text" inputmode="decimal" placeholder="0" autocomplete="off" />
+        <div class="sub" id="subTo"></div>
+      </div>
+    </div>
+
+    <div class="chips" id="chips"></div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="copyBtn">📋 Copiar</button>
+      <button class="btn btn-ghost" id="clearBtn">✕ Limpiar</button>
+    </div>
+
+    <div class="rate-card">
+      <div class="rate-row">
+        <div>
+          <div class="rate-main">1 MXN = <span id="rateVal">—</span> COP</div>
+          <div class="rate-meta"><span class="dot" id="rateDot"></span><span id="rateMeta">Cargando…</span></div>
+        </div>
+        <button class="refresh" id="refreshBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Actualizar
+        </button>
+      </div>
+      <div class="manual" id="manual">
+        <label>1 MXN =</label>
+        <input id="manualInput" type="text" inputmode="decimal" placeholder="Tasa COP" />
+      </div>
+      <div class="link" id="manualToggle">Ajustar tasa manualmente</div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const CURR = {
+      MXN: { flag: '🇲🇽', name: 'Peso mexicano' },
+      COP: { flag: '🇨🇴', name: 'Peso colombiano' },
+    };
+    const LS_RATE = 'mxncop_rate';       // { rate, ts, source }
+    const LS_DIR  = 'mxncop_dir';        // 'MXN' or 'COP' as the "from" currency
+    const FALLBACK = 145;                // tasa aproximada de respaldo (1 MXN ≈ COP)
+
+    let rate = FALLBACK;                  // COP por 1 MXN
+    let dir = 'MXN';                     // moneda origen
+    let lastEdited = 'from';
+
+    const $ = id => document.getElementById(id);
+    const amtFrom = $('amtFrom'), amtTo = $('amtTo');
+
+    // ---------- formato ----------
+    function fmt(n, decimals) {
+      if (n === '' || n === null || isNaN(n)) return '';
+      return Number(n).toLocaleString('es-CO', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimals,
+      });
+    }
+    function parse(str) {
+      if (!str) return NaN;
+      // acepta 1.234,56 y 1234.56
+      let s = str.replace(/\s/g, '');
+      if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.');
+      else s = s.replace(',', '.');
+      return parseFloat(s);
+    }
+
+    function currFrom() { return dir; }
+    function currTo() { return dir === 'MXN' ? 'COP' : 'MXN'; }
+    function rateFromTo() {
+      // rate = COP por 1 MXN. Devuelve factor origen->destino
+      return dir === 'MXN' ? rate : (1 / rate);
+    }
+
+    // ---------- render de etiquetas ----------
+    function renderLabels() {
+      const f = currFrom(), t = currTo();
+      $('flagFrom').textContent = CURR[f].flag;
+      $('codeFrom').textContent = f;
+      $('nameFrom').textContent = CURR[f].name;
+      $('flagTo').textContent = CURR[t].flag;
+      $('codeTo').textContent = t;
+      $('nameTo').textContent = CURR[t].name;
+      $('rateVal').textContent = fmt(rate, 2);
+    }
+
+    function decimalsFor(code) { return code === 'MXN' ? 2 : 0; }
+
+    // ---------- conversión ----------
+    function convert() {
+      const factor = rateFromTo();
+      if (lastEdited === 'from') {
+        const v = parse(amtFrom.value);
+        if (isNaN(v)) { amtTo.value = ''; renderSubs(NaN, NaN); return; }
+        const res = v * factor;
+        amtTo.value = fmt(res, decimalsFor(currTo()));
+        renderSubs(v, res);
+      } else {
+        const v = parse(amtTo.value);
+        if (isNaN(v)) { amtFrom.value = ''; renderSubs(NaN, NaN); return; }
+        const res = v / factor;
+        amtFrom.value = fmt(res, decimalsFor(currFrom()));
+        renderSubs(res, v);
+      }
+    }
+
+    function renderSubs(fromVal, toVal) {
+      $('subFrom').textContent = isNaN(fromVal) ? '' : `${fmt(fromVal, decimalsFor(currFrom()))} ${currFrom()}`;
+      $('subTo').textContent   = isNaN(toVal) ? '' : `${fmt(toVal, decimalsFor(currTo()))} ${currTo()}`;
+    }
+
+    // ---------- tasa ----------
+    function setRateUI(ts, source, ok = true) {
+      const dot = $('rateDot'), meta = $('rateMeta');
+      $('rateVal').textContent = fmt(rate, 2);
+      if (!ok) {
+        dot.className = 'dot err';
+        meta.textContent = 'Sin conexión · usando última tasa';
+        return;
+      }
+      const age = ts ? (Date.now() - ts) : Infinity;
+      const hrs = age / 3.6e6;
+      dot.className = 'dot' + (hrs > 24 ? ' stale' : '');
+      let when;
+      if (source === 'manual') when = 'Tasa manual';
+      else if (!ts) when = 'Tasa de respaldo';
+      else if (hrs < 1) when = 'Actualizada hace un momento';
+      else if (hrs < 24) when = `Actualizada hace ${Math.round(hrs)} h`;
+      else when = 'Actualizada ' + new Date(ts).toLocaleDateString('es-CO');
+      meta.textContent = when;
+    }
+
+    async function fetchRate() {
+      $('refreshBtn').classList.add('loading');
+      try {
+        const r = await fetch('https://open.er-api.com/v6/latest/MXN');
+        if (!r.ok) throw new Error('bad');
+        const data = await r.json();
+        const cop = data && data.rates && data.rates.COP;
+        if (!cop) throw new Error('no cop');
+        rate = cop;
+        const ts = data.time_last_update_unix ? data.time_last_update_unix * 1000 : Date.now();
+        localStorage.setItem(LS_RATE, JSON.stringify({ rate, ts, source: 'api' }));
+        renderLabels();
+        setRateUI(ts, 'api', true);
+        convert();
+        toast('Tasa actualizada');
+      } catch (e) {
+        const cached = loadCached();
+        setRateUI(cached ? cached.ts : null, cached ? cached.source : null, false);
+      } finally {
+        $('refreshBtn').classList.remove('loading');
+      }
+    }
+
+    function loadCached() {
+      try {
+        const raw = localStorage.getItem(LS_RATE);
+        if (!raw) return null;
+        const c = JSON.parse(raw);
+        if (c && c.rate) { rate = c.rate; return c; }
+      } catch (e) {}
+      return null;
+    }
+
+    // ---------- chips ----------
+    function renderChips() {
+      const presets = dir === 'MXN' ? [100, 500, 1000, 5000] : [10000, 50000, 100000, 500000];
+      const c = $('chips');
+      c.innerHTML = '';
+      presets.forEach(p => {
+        const b = document.createElement('div');
+        b.className = 'chip';
+        b.textContent = fmt(p, 0);
+        b.onclick = () => {
+          lastEdited = 'from';
+          amtFrom.value = fmt(p, 0);
+          convert();
+        };
+        c.appendChild(b);
+      });
+    }
+
+    // ---------- toast ----------
+    let toastT;
+    function toast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastT);
+      toastT = setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // ---------- eventos ----------
+    amtFrom.addEventListener('input', () => { lastEdited = 'from'; convert(); });
+    amtTo.addEventListener('input', () => { lastEdited = 'to'; convert(); });
+
+    $('swap').addEventListener('click', () => {
+      dir = dir === 'MXN' ? 'COP' : 'MXN';
+      localStorage.setItem(LS_DIR, dir);
+      $('swap').classList.toggle('spin');
+      // conserva el valor mostrado en "from" moviéndolo según lo último editado
+      const keep = amtFrom.value;
+      amtFrom.value = amtTo.value;
+      amtTo.value = keep;
+      lastEdited = 'from';
+      renderLabels();
+      renderChips();
+      convert();
+    });
+
+    $('copyBtn').addEventListener('click', () => {
+      if (!amtTo.value) { toast('Ingresa un monto'); return; }
+      const txt = `${amtFrom.value} ${currFrom()} = ${amtTo.value} ${currTo()}`;
+      navigator.clipboard?.writeText(txt).then(() => toast('Copiado ✓'), () => toast(txt));
+    });
+
+    $('clearBtn').addEventListener('click', () => {
+      amtFrom.value = ''; amtTo.value = '';
+      renderSubs(NaN, NaN);
+      amtFrom.focus();
+    });
+
+    $('refreshBtn').addEventListener('click', fetchRate);
+
+    $('manualToggle').addEventListener('click', () => {
+      const m = $('manual');
+      m.classList.toggle('open');
+      if (m.classList.contains('open')) { $('manualInput').value = fmt(rate, 2); $('manualInput').focus(); }
+    });
+
+    $('manualInput').addEventListener('input', (e) => {
+      const v = parse(e.target.value);
+      if (!isNaN(v) && v > 0) {
+        rate = v;
+        localStorage.setItem(LS_RATE, JSON.stringify({ rate, ts: Date.now(), source: 'manual' }));
+        renderLabels();
+        setRateUI(Date.now(), 'manual', true);
+        convert();
+      }
+    });
+
+    // ---------- init ----------
+    (function init() {
+      dir = localStorage.getItem(LS_DIR) || 'MXN';
+      const cached = loadCached();
+      renderLabels();
+      renderChips();
+      if (cached) setRateUI(cached.ts, cached.source, true);
+      else setRateUI(null, null, true);
+      fetchRate();
+      amtFrom.focus();
+    })();
+  </script>
+</body>
+</html>
