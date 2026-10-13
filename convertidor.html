@@ -146,6 +146,19 @@
     .day-group-head .dg-day { font-size: 13px; font-weight: 700; color: var(--text); }
     .day-group-head .dg-total { font-size: 12px; font-weight: 700; color: var(--muted); }
 
+    .cat-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+    .cat-chip { display: flex; align-items: center; gap: 5px; padding: 8px 11px; border-radius: 10px; background: var(--bg); border: 1.5px solid transparent; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+    .cat-chip.active { background: #fff; border-color: var(--primary); color: var(--primary); box-shadow: 0 1px 4px rgba(99,102,241,0.15); }
+
+    .cat-sum-item { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+    .cat-sum-item:first-child { margin-top: 0; }
+    .cat-sum-icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 16px; background: var(--bg); flex-shrink: 0; }
+    .cat-sum-main { flex: 1; min-width: 0; }
+    .cat-sum-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .cat-sum-top .csm-amt { color: var(--muted); font-weight: 700; }
+    .cat-bar { height: 7px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .cat-bar-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width 0.4s ease; }
+
     .add-card { background: var(--card); border-radius: 18px; padding: 16px; box-shadow: 0 1px 6px rgba(15,23,42,0.06); margin-top: 16px; }
     .add-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
     .seg { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; margin-bottom: 10px; }
@@ -257,10 +270,11 @@
           <div class="seg-opt active" data-cur="COP">🇨🇴 COP</div>
           <div class="seg-opt" data-cur="MXN">🇲🇽 MXN</div>
         </div>
+        <div class="cat-row" id="catRow"></div>
         <div class="input-row">
           <input class="inp amt" id="expAmt" type="text" inputmode="decimal" placeholder="Monto" autocomplete="off" />
         </div>
-        <input class="inp" id="expNote" type="text" placeholder="¿En qué? (ej. Taxi, Comida)" autocomplete="off" style="margin-top:8px" />
+        <input class="inp" id="expNote" type="text" placeholder="Nota (opcional)" autocomplete="off" style="margin-top:8px" />
         <div class="conv-hint" id="expHint"></div>
         <button class="btn btn-primary" id="addExpBtn" style="margin-top:12px">Agregar gasto</button>
       </div>
@@ -299,13 +313,22 @@
 
   <script>
     const CURR = { MXN: { flag: '🇲🇽', name: 'Peso mexicano' }, COP: { flag: '🇨🇴', name: 'Peso colombiano' } };
+    const CATS = [
+      { id: 'comida', label: 'Comida', icon: '🍽️' },
+      { id: 'transporte', label: 'Transporte', icon: '🚕' },
+      { id: 'hospedaje', label: 'Hospedaje', icon: '🏨' },
+      { id: 'ocio', label: 'Ocio', icon: '🎉' },
+      { id: 'compras', label: 'Compras', icon: '🛍️' },
+      { id: 'otros', label: 'Otros', icon: '📦' },
+    ];
+    const catById = id => CATS.find(c => c.id === id) || CATS[CATS.length - 1];
     const LS = { rate: 'mxncop_rate', dir: 'mxncop_dir', budget: 'mxncop_budget', exp: 'mxncop_exp' };
     const FALLBACK = 145;
 
     let rate = FALLBACK, dir = 'MXN', lastEdited = 'from';
     let budget = null;           // { amount, currency }
     let expenses = [];           // [{ id, amount, currency, note, ts }]
-    let expCur = 'COP', budgetCurTmp = 'MXN';
+    let expCur = 'COP', budgetCurTmp = 'MXN', expCat = 'comida';
 
     const $ = id => document.getElementById(id);
     const amtFrom = $('amtFrom'), amtTo = $('amtTo');
@@ -389,6 +412,39 @@
 
     /* ========== VIÁTICOS ========== */
     function totalSpentIn(cur) { return expenses.reduce((s, e) => s + conv(e.amount, e.currency, cur), 0); }
+
+    function renderCatChips() {
+      const row = $('catRow'); row.innerHTML = '';
+      CATS.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'cat-chip' + (c.id === expCat ? ' active' : '');
+        el.innerHTML = `<span>${c.icon}</span>${c.label}`;
+        el.onclick = () => { expCat = c.id; renderCatChips(); };
+        row.appendChild(el);
+      });
+    }
+
+    function renderCatSummary(area, cur, spent) {
+      if (!expenses.length || spent <= 0) return;
+      const totals = {};
+      expenses.forEach(e => { const id = e.cat || 'otros'; totals[id] = (totals[id] || 0) + conv(e.amount, e.currency, cur); });
+      const rows = Object.keys(totals).map(id => ({ id, amt: totals[id] })).filter(r => r.amt > 0).sort((a, b) => b.amt - a.amt);
+      const max = rows[0].amt;
+      const d = decimalsFor(cur);
+      let html = '<div class="stat-card"><h3 style="font-size:14px;font-weight:700;margin-bottom:14px">¿En qué se te va?</h3>';
+      rows.forEach(r => {
+        const c = catById(r.id), pct = Math.round((r.amt / spent) * 100), w = Math.max(4, (r.amt / max) * 100);
+        html += `<div class="cat-sum-item">
+          <div class="cat-sum-icon">${c.icon}</div>
+          <div class="cat-sum-main">
+            <div class="cat-sum-top"><span>${c.label} · ${pct}%</span><span class="csm-amt">${fmt(r.amt, d)} ${cur}</span></div>
+            <div class="cat-bar"><div class="cat-bar-fill" style="width:${w}%"></div></div>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      area.insertAdjacentHTML('beforeend', html);
+    }
     function renderBudget() {
       const area = $('budgetArea');
       if (!budget) {
@@ -464,6 +520,8 @@
         ${suggested == null ? `<div class="set-dates-hint">Agrega las fechas del viaje para ver tu <span id="hintDates">sugerido por día</span>.</div>` : ''}
       </div>`;
 
+      renderCatSummary(area, cur, spent);
+
       $('editBudgetBtn').onclick = openBudget;
       if ($('hintDates')) $('hintDates').onclick = openBudget;
       $('addCard').style.display = 'block';
@@ -488,12 +546,13 @@
         items.forEach(e => {
           const other = e.currency === 'MXN' ? 'COP' : 'MXN';
           const convVal = conv(e.amount, e.currency, other);
+          const c = catById(e.cat || 'otros');
           const div = document.createElement('div'); div.className = 'exp-item';
           div.innerHTML = `
-            <div class="exp-icon">${CURR[e.currency].flag}</div>
+            <div class="exp-icon">${c.icon}</div>
             <div class="exp-main">
-              <div class="exp-note">${e.note ? escapeHtml(e.note) : 'Gasto'}</div>
-              <div class="exp-date">${new Date(e.ts).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</div>
+              <div class="exp-note">${e.note ? escapeHtml(e.note) : c.label}</div>
+              <div class="exp-date">${c.label} · ${new Date(e.ts).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</div>
             </div>
             <div class="exp-amts">
               <div class="exp-orig">${fmt(e.amount, decimalsFor(e.currency))} ${e.currency}</div>
@@ -521,7 +580,7 @@
     function addExpense() {
       const v = parse($('expAmt').value);
       if (isNaN(v) || v <= 0) { toast('Ingresa un monto válido'); return; }
-      expenses.push({ id: Date.now() + '' + Math.random().toString(36).slice(2, 6), amount: v, currency: expCur, note: $('expNote').value.trim(), ts: Date.now() });
+      expenses.push({ id: Date.now() + '' + Math.random().toString(36).slice(2, 6), amount: v, currency: expCur, cat: expCat, note: $('expNote').value.trim(), ts: Date.now() });
       saveExp(); $('expAmt').value = ''; $('expNote').value = '';
       renderBudget(); toast('Gasto registrado ✓');
     }
@@ -611,7 +670,7 @@
       try { budget = JSON.parse(localStorage.getItem(LS.budget)) || null; } catch (e) { budget = null; }
       try { expenses = JSON.parse(localStorage.getItem(LS.exp)) || []; } catch (e) { expenses = []; }
       const cached = loadCached();
-      renderLabels(); renderChips();
+      renderLabels(); renderChips(); renderCatChips();
       setRateUI(cached ? cached.ts : null, cached ? cached.source : null, true);
       renderBudget();
       fetchRate();
