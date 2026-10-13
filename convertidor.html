@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#6366f1" />
-  <title>MXN ⇄ COP</title>
+  <title>Viáticos MXN ⇄ COP</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -13,6 +13,7 @@
       --primary-dark: #4f46e5;
       --mxn: #10b981;
       --cop: #f59e0b;
+      --danger: #ef4444;
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #1e293b;
@@ -30,296 +31,303 @@
     }
 
     header {
-      background: var(--primary);
       background: linear-gradient(135deg, #6366f1, #7c3aed);
       color: white;
-      padding: 22px 18px 18px;
+      padding: 20px 18px 14px;
       box-shadow: 0 2px 12px rgba(99,102,241,0.35);
+      position: sticky; top: 0; z-index: 20;
     }
-    header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
-    header p { font-size: 13px; opacity: 0.85; margin-top: 3px; }
+    header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+    header p { font-size: 12px; opacity: 0.85; margin-top: 2px; }
 
-    main { padding: 18px 16px 40px; max-width: 480px; margin: 0 auto; width: 100%; flex: 1; }
+    .tabs {
+      display: flex; gap: 6px; margin-top: 14px;
+      background: rgba(255,255,255,0.15); border-radius: 12px; padding: 4px;
+    }
+    .tab {
+      flex: 1; text-align: center; padding: 9px; border-radius: 9px;
+      font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.8);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .tab.active { background: #fff; color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
 
+    main { padding: 18px 16px 48px; max-width: 480px; margin: 0 auto; width: 100%; flex: 1; }
+    .view { display: none; }
+    .view.active { display: block; animation: fade 0.25s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* ---------- Convertidor ---------- */
     .converter {
-      background: var(--card);
-      border-radius: 22px;
-      padding: 8px;
-      box-shadow: 0 4px 24px rgba(15,23,42,0.08);
-      position: relative;
+      background: var(--card); border-radius: 22px; padding: 8px;
+      box-shadow: 0 4px 24px rgba(15,23,42,0.08); position: relative;
     }
-
-    .money-box {
-      border-radius: 16px;
-      padding: 18px 18px 16px;
-      transition: background 0.2s;
-    }
+    .money-box { border-radius: 16px; padding: 16px 18px 14px; transition: background 0.2s; }
     .money-box.from { background: rgba(16,185,129,0.07); }
     .money-box.to   { background: rgba(245,158,11,0.08); }
-
-    .money-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
+    .money-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
     .money-label { display: flex; align-items: center; gap: 9px; }
-    .flag {
-      width: 30px; height: 30px; border-radius: 50%;
-      display: grid; place-items: center; font-size: 17px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-      background: #fff;
-    }
+    .flag { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 17px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); background: #fff; }
     .money-code { font-size: 15px; font-weight: 700; }
     .money-name { font-size: 11px; color: var(--muted); }
-
-    .amount {
-      width: 100%; border: none; background: transparent;
-      font-size: 34px; font-weight: 700; color: var(--text);
-      outline: none; padding: 2px 0; letter-spacing: -0.5px;
-    }
+    .amount { width: 100%; border: none; background: transparent; font-size: 32px; font-weight: 700; color: var(--text); outline: none; padding: 2px 0; letter-spacing: -0.5px; }
     .amount::placeholder { color: #cbd5e1; }
     .money-box.to .amount { color: var(--cop); }
     .money-box.from .amount { color: var(--mxn); }
-
-    .sub { font-size: 12px; color: var(--muted); margin-top: 4px; min-height: 16px; }
+    .sub { font-size: 12px; color: var(--muted); margin-top: 3px; min-height: 16px; }
 
     .swap-wrap { position: relative; height: 0; z-index: 2; }
-    .swap {
-      position: absolute; left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      width: 46px; height: 46px; border-radius: 50%;
-      background: var(--primary); color: #fff; border: 4px solid var(--card);
-      display: grid; place-items: center; cursor: pointer;
-      box-shadow: 0 3px 10px rgba(99,102,241,0.4);
-      transition: transform 0.25s ease, background 0.2s;
-      font-size: 20px;
-    }
+    .swap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: #fff; border: 4px solid var(--card); display: grid; place-items: center; cursor: pointer; box-shadow: 0 3px 10px rgba(99,102,241,0.4); transition: transform 0.25s ease; font-size: 20px; }
     .swap:active { transform: translate(-50%, -50%) scale(0.9); }
     .swap.spin { transform: translate(-50%, -50%) rotate(180deg); }
 
     .chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-    .chip {
-      flex: 1; min-width: 60px; text-align: center;
-      background: var(--card); border: 1.5px solid var(--border);
-      border-radius: 12px; padding: 10px 6px; font-size: 13px; font-weight: 600;
-      color: var(--muted); cursor: pointer; transition: all 0.15s;
-    }
+    .chip { flex: 1; min-width: 60px; text-align: center; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 6px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
     .chip:active { transform: scale(0.95); border-color: var(--primary); color: var(--primary); }
 
     .actions { display: flex; gap: 10px; margin-top: 12px; }
-    .btn {
-      flex: 1; border: none; border-radius: 12px; padding: 13px;
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 7px;
-      transition: transform 0.12s, background 0.2s;
-    }
+    .btn { flex: 1; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: transform 0.12s, background 0.2s; }
     .btn:active { transform: scale(0.97); }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-ghost { background: var(--card); color: var(--muted); border: 1.5px solid var(--border); }
+    .btn-add { background: var(--mxn); color: #fff; }
 
-    .rate-card {
-      margin-top: 18px; background: var(--card); border-radius: 16px;
-      padding: 16px; box-shadow: 0 1px 6px rgba(15,23,42,0.06);
-    }
+    .rate-card { margin-top: 18px; background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 1px 6px rgba(15,23,42,0.06); }
     .rate-row { display: flex; align-items: center; justify-content: space-between; }
     .rate-main { font-size: 15px; font-weight: 700; }
     .rate-main span { color: var(--primary); }
     .rate-meta { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mxn); }
-    .dot.stale { background: var(--cop); }
-    .dot.err { background: #ef4444; }
-
-    .refresh {
-      background: rgba(99,102,241,0.1); color: var(--primary);
-      border: none; border-radius: 10px; padding: 9px 12px;
-      font-size: 13px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; gap: 6px;
-    }
+    .dot.stale { background: var(--cop); } .dot.err { background: var(--danger); }
+    .refresh { background: rgba(99,102,241,0.1); color: var(--primary); border: none; border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     .refresh:active { transform: scale(0.95); }
-    .refresh svg { transition: transform 0.6s; }
     .refresh.loading svg { animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    .manual {
-      margin-top: 12px; display: none; align-items: center; gap: 10px;
-      background: rgba(245,158,11,0.08); border-radius: 12px; padding: 12px 14px;
-    }
+    .manual { margin-top: 12px; display: none; align-items: center; gap: 10px; background: rgba(245,158,11,0.08); border-radius: 12px; padding: 12px 14px; }
     .manual.open { display: flex; }
     .manual label { font-size: 12px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
-    .manual input {
-      flex: 1; border: 1.5px solid var(--border); border-radius: 8px;
-      padding: 8px 10px; font-size: 14px; outline: none; width: 100%;
-    }
+    .manual input { flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 14px; outline: none; width: 100%; }
     .manual input:focus { border-color: var(--primary); }
     .link { font-size: 12px; color: var(--primary); font-weight: 600; cursor: pointer; text-align: center; margin-top: 12px; }
 
-    .toast {
-      position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(80px);
-      background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 30px;
-      font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 50;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-    }
+    /* ---------- Viáticos ---------- */
+    .budget-card { background: linear-gradient(135deg, #6366f1, #7c3aed); color: #fff; border-radius: 22px; padding: 22px 20px; box-shadow: 0 6px 24px rgba(99,102,241,0.35); }
+    .budget-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .budget-label { font-size: 12px; opacity: 0.85; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .budget-remaining { font-size: 40px; font-weight: 800; letter-spacing: -1px; margin-top: 2px; line-height: 1; }
+    .budget-cur { font-size: 15px; opacity: 0.85; font-weight: 600; margin-top: 4px; }
+    .edit-budget { background: rgba(255,255,255,0.2); border: none; color: #fff; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .edit-budget:active { transform: scale(0.95); }
+    .bar { height: 10px; background: rgba(255,255,255,0.25); border-radius: 6px; overflow: hidden; margin-top: 18px; }
+    .bar-fill { height: 100%; background: #fff; border-radius: 6px; transition: width 0.4s ease, background 0.3s; width: 0; }
+    .bar-fill.warn { background: #fde68a; } .bar-fill.danger { background: #fecaca; }
+    .budget-stats { display: flex; justify-content: space-between; margin-top: 12px; font-size: 12px; opacity: 0.9; }
+    .budget-stats b { display: block; font-size: 15px; font-weight: 700; opacity: 1; margin-top: 2px; }
+
+    .empty-budget { text-align: center; padding: 30px 20px; color: var(--muted); }
+    .empty-budget .big { font-size: 40px; margin-bottom: 8px; }
+
+    .add-card { background: var(--card); border-radius: 18px; padding: 16px; box-shadow: 0 1px 6px rgba(15,23,42,0.06); margin-top: 16px; }
+    .add-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    .seg { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; margin-bottom: 10px; }
+    .seg-opt { flex: 1; text-align: center; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+    .seg-opt.active { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .input-row { display: flex; gap: 8px; }
+    .inp { border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 15px; outline: none; width: 100%; background: #fff; transition: border-color 0.2s; }
+    .inp:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+    .inp.amt { flex: 1.3; font-weight: 700; }
+    .conv-hint { font-size: 12px; color: var(--muted); margin: 8px 2px 0; min-height: 16px; }
+
+    .exp-list { margin-top: 20px; }
+    .exp-list h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .exp-list h3 .clear-all { font-size: 12px; color: var(--danger); font-weight: 600; cursor: pointer; }
+    .exp-item { background: var(--card); border-radius: 14px; padding: 13px 14px; margin-bottom: 9px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 4px rgba(15,23,42,0.05); }
+    .exp-icon { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; font-size: 17px; flex-shrink: 0; background: rgba(99,102,241,0.1); }
+    .exp-main { flex: 1; min-width: 0; }
+    .exp-note { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .exp-date { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .exp-amts { text-align: right; flex-shrink: 0; }
+    .exp-orig { font-size: 15px; font-weight: 700; }
+    .exp-conv { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .exp-del { background: none; border: none; color: #cbd5e1; font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+    .exp-del:active { color: var(--danger); }
+    .exp-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 24px; }
+
+    /* ---------- Modal ---------- */
+    .overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); display: none; align-items: flex-end; z-index: 40; }
+    .overlay.open { display: flex; }
+    .sheet { background: #fff; width: 100%; border-radius: 22px 22px 0 0; padding: 22px 20px calc(22px + env(safe-area-inset-bottom)); max-width: 480px; margin: 0 auto; animation: up 0.25s ease; }
+    @keyframes up { from { transform: translateY(100%); } to { transform: none; } }
+    .sheet h3 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .sheet p { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+    .sheet label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; }
+
+    .toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 30px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 60; box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Convertidor MXN ⇄ COP</h1>
-    <p>Peso mexicano a peso colombiano</p>
+    <h1>Viáticos MXN ⇄ COP</h1>
+    <p>Convierte y controla tu presupuesto de viaje</p>
+    <div class="tabs">
+      <div class="tab active" data-view="conv">💱 Convertidor</div>
+      <div class="tab" data-view="budget">🧳 Viáticos</div>
+    </div>
   </header>
 
   <main>
-    <div class="converter">
-      <div class="money-box from" id="boxFrom">
-        <div class="money-head">
-          <div class="money-label">
+    <!-- ======= CONVERTIDOR ======= -->
+    <section class="view active" id="view-conv">
+      <div class="converter">
+        <div class="money-box from">
+          <div class="money-head"><div class="money-label">
             <div class="flag" id="flagFrom">🇲🇽</div>
-            <div>
-              <div class="money-code" id="codeFrom">MXN</div>
-              <div class="money-name" id="nameFrom">Peso mexicano</div>
-            </div>
-          </div>
+            <div><div class="money-code" id="codeFrom">MXN</div><div class="money-name" id="nameFrom">Peso mexicano</div></div>
+          </div></div>
+          <input class="amount" id="amtFrom" type="text" inputmode="decimal" placeholder="0" autocomplete="off" />
+          <div class="sub" id="subFrom"></div>
         </div>
-        <input class="amount" id="amtFrom" type="text" inputmode="decimal" placeholder="0" autocomplete="off" />
-        <div class="sub" id="subFrom"></div>
-      </div>
-
-      <div class="swap-wrap">
-        <button class="swap" id="swap" aria-label="Invertir">⇅</button>
-      </div>
-
-      <div class="money-box to" id="boxTo">
-        <div class="money-head">
-          <div class="money-label">
+        <div class="swap-wrap"><button class="swap" id="swap" aria-label="Invertir">⇅</button></div>
+        <div class="money-box to">
+          <div class="money-head"><div class="money-label">
             <div class="flag" id="flagTo">🇨🇴</div>
-            <div>
-              <div class="money-code" id="codeTo">COP</div>
-              <div class="money-name" id="nameTo">Peso colombiano</div>
-            </div>
+            <div><div class="money-code" id="codeTo">COP</div><div class="money-name" id="nameTo">Peso colombiano</div></div>
+          </div></div>
+          <input class="amount" id="amtTo" type="text" inputmode="decimal" placeholder="0" autocomplete="off" />
+          <div class="sub" id="subTo"></div>
+        </div>
+      </div>
+
+      <div class="chips" id="chips"></div>
+
+      <div class="actions">
+        <button class="btn btn-add" id="toExpenseBtn">➕ Registrar como gasto</button>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="copyBtn">📋 Copiar</button>
+        <button class="btn btn-ghost" id="clearBtn">✕ Limpiar</button>
+      </div>
+
+      <div class="rate-card">
+        <div class="rate-row">
+          <div>
+            <div class="rate-main">1 MXN = <span id="rateVal">—</span> COP</div>
+            <div class="rate-meta"><span class="dot" id="rateDot"></span><span id="rateMeta">Cargando…</span></div>
           </div>
+          <button class="refresh" id="refreshBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Actualizar
+          </button>
         </div>
-        <input class="amount" id="amtTo" type="text" inputmode="decimal" placeholder="0" autocomplete="off" />
-        <div class="sub" id="subTo"></div>
-      </div>
-    </div>
-
-    <div class="chips" id="chips"></div>
-
-    <div class="actions">
-      <button class="btn btn-primary" id="copyBtn">📋 Copiar</button>
-      <button class="btn btn-ghost" id="clearBtn">✕ Limpiar</button>
-    </div>
-
-    <div class="rate-card">
-      <div class="rate-row">
-        <div>
-          <div class="rate-main">1 MXN = <span id="rateVal">—</span> COP</div>
-          <div class="rate-meta"><span class="dot" id="rateDot"></span><span id="rateMeta">Cargando…</span></div>
+        <div class="manual" id="manual">
+          <label>1 MXN =</label>
+          <input id="manualInput" type="text" inputmode="decimal" placeholder="Tasa COP" />
         </div>
-        <button class="refresh" id="refreshBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Actualizar
-        </button>
+        <div class="link" id="manualToggle">Ajustar tasa manualmente</div>
       </div>
-      <div class="manual" id="manual">
-        <label>1 MXN =</label>
-        <input id="manualInput" type="text" inputmode="decimal" placeholder="Tasa COP" />
+    </section>
+
+    <!-- ======= VIÁTICOS ======= -->
+    <section class="view" id="view-budget">
+      <div id="budgetArea"></div>
+
+      <div class="add-card" id="addCard" style="display:none">
+        <h3>Registrar gasto</h3>
+        <div class="seg" id="expCurSeg">
+          <div class="seg-opt active" data-cur="COP">🇨🇴 COP</div>
+          <div class="seg-opt" data-cur="MXN">🇲🇽 MXN</div>
+        </div>
+        <div class="input-row">
+          <input class="inp amt" id="expAmt" type="text" inputmode="decimal" placeholder="Monto" autocomplete="off" />
+        </div>
+        <input class="inp" id="expNote" type="text" placeholder="¿En qué? (ej. Taxi, Comida)" autocomplete="off" style="margin-top:8px" />
+        <div class="conv-hint" id="expHint"></div>
+        <button class="btn btn-primary" id="addExpBtn" style="margin-top:12px">Agregar gasto</button>
       </div>
-      <div class="link" id="manualToggle">Ajustar tasa manualmente</div>
-    </div>
+
+      <div class="exp-list" id="expListWrap" style="display:none">
+        <h3>Gastos <span class="clear-all" id="clearExp">Borrar todo</span></h3>
+        <div id="expList"></div>
+      </div>
+    </section>
   </main>
+
+  <!-- Modal presupuesto -->
+  <div class="overlay" id="budgetOverlay">
+    <div class="sheet">
+      <h3>Presupuesto de viáticos</h3>
+      <p>Define cuánto tienes disponible para el viaje.</p>
+      <div class="seg" id="budgetCurSeg">
+        <div class="seg-opt active" data-cur="MXN">🇲🇽 MXN</div>
+        <div class="seg-opt" data-cur="COP">🇨🇴 COP</div>
+      </div>
+      <label>Monto total</label>
+      <input class="inp" id="budgetInput" type="text" inputmode="decimal" placeholder="0" autocomplete="off" style="font-size:22px; font-weight:700; margin-bottom:16px" />
+      <div class="actions">
+        <button class="btn btn-ghost" id="budgetCancel">Cancelar</button>
+        <button class="btn btn-primary" id="budgetSave">Guardar</button>
+      </div>
+    </div>
+  </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    const CURR = {
-      MXN: { flag: '🇲🇽', name: 'Peso mexicano' },
-      COP: { flag: '🇨🇴', name: 'Peso colombiano' },
-    };
-    const LS_RATE = 'mxncop_rate';       // { rate, ts, source }
-    const LS_DIR  = 'mxncop_dir';        // 'MXN' or 'COP' as the "from" currency
-    const FALLBACK = 145;                // tasa aproximada de respaldo (1 MXN ≈ COP)
+    const CURR = { MXN: { flag: '🇲🇽', name: 'Peso mexicano' }, COP: { flag: '🇨🇴', name: 'Peso colombiano' } };
+    const LS = { rate: 'mxncop_rate', dir: 'mxncop_dir', budget: 'mxncop_budget', exp: 'mxncop_exp' };
+    const FALLBACK = 145;
 
-    let rate = FALLBACK;                  // COP por 1 MXN
-    let dir = 'MXN';                     // moneda origen
-    let lastEdited = 'from';
+    let rate = FALLBACK, dir = 'MXN', lastEdited = 'from';
+    let budget = null;           // { amount, currency }
+    let expenses = [];           // [{ id, amount, currency, note, ts }]
+    let expCur = 'COP', budgetCurTmp = 'MXN';
 
     const $ = id => document.getElementById(id);
     const amtFrom = $('amtFrom'), amtTo = $('amtTo');
 
-    // ---------- formato ----------
-    function fmt(n, decimals) {
-      if (n === '' || n === null || isNaN(n)) return '';
-      return Number(n).toLocaleString('es-CO', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: decimals,
-      });
-    }
-    function parse(str) {
-      if (!str) return NaN;
-      // acepta 1.234,56 y 1234.56
-      let s = str.replace(/\s/g, '');
-      if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.');
-      else s = s.replace(',', '.');
-      return parseFloat(s);
-    }
+    /* ---------- formato ---------- */
+    function fmt(n, d) { if (n === '' || n == null || isNaN(n)) return ''; return Number(n).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: d }); }
+    function parse(str) { if (!str) return NaN; let s = String(str).replace(/\s/g, ''); if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.'); else s = s.replace(',', '.'); return parseFloat(s); }
+    function decimalsFor(c) { return c === 'MXN' ? 2 : 0; }
+    // convierte "amount" de moneda a->b usando rate (COP por 1 MXN)
+    function conv(amount, a, b) { if (a === b) return amount; return a === 'MXN' ? amount * rate : amount / rate; }
 
+    /* ========== CONVERTIDOR ========== */
     function currFrom() { return dir; }
     function currTo() { return dir === 'MXN' ? 'COP' : 'MXN'; }
-    function rateFromTo() {
-      // rate = COP por 1 MXN. Devuelve factor origen->destino
-      return dir === 'MXN' ? rate : (1 / rate);
-    }
-
-    // ---------- render de etiquetas ----------
     function renderLabels() {
       const f = currFrom(), t = currTo();
-      $('flagFrom').textContent = CURR[f].flag;
-      $('codeFrom').textContent = f;
-      $('nameFrom').textContent = CURR[f].name;
-      $('flagTo').textContent = CURR[t].flag;
-      $('codeTo').textContent = t;
-      $('nameTo').textContent = CURR[t].name;
+      $('flagFrom').textContent = CURR[f].flag; $('codeFrom').textContent = f; $('nameFrom').textContent = CURR[f].name;
+      $('flagTo').textContent = CURR[t].flag; $('codeTo').textContent = t; $('nameTo').textContent = CURR[t].name;
       $('rateVal').textContent = fmt(rate, 2);
     }
-
-    function decimalsFor(code) { return code === 'MXN' ? 2 : 0; }
-
-    // ---------- conversión ----------
-    function convert() {
-      const factor = rateFromTo();
+    function convertUI() {
+      const factor = dir === 'MXN' ? rate : (1 / rate);
       if (lastEdited === 'from') {
         const v = parse(amtFrom.value);
-        if (isNaN(v)) { amtTo.value = ''; renderSubs(NaN, NaN); return; }
-        const res = v * factor;
-        amtTo.value = fmt(res, decimalsFor(currTo()));
-        renderSubs(v, res);
+        if (isNaN(v)) { amtTo.value = ''; subs(NaN, NaN); return; }
+        const res = v * factor; amtTo.value = fmt(res, decimalsFor(currTo())); subs(v, res);
       } else {
         const v = parse(amtTo.value);
-        if (isNaN(v)) { amtFrom.value = ''; renderSubs(NaN, NaN); return; }
-        const res = v / factor;
-        amtFrom.value = fmt(res, decimalsFor(currFrom()));
-        renderSubs(res, v);
+        if (isNaN(v)) { amtFrom.value = ''; subs(NaN, NaN); return; }
+        const res = v / factor; amtFrom.value = fmt(res, decimalsFor(currFrom())); subs(res, v);
       }
     }
-
-    function renderSubs(fromVal, toVal) {
-      $('subFrom').textContent = isNaN(fromVal) ? '' : `${fmt(fromVal, decimalsFor(currFrom()))} ${currFrom()}`;
-      $('subTo').textContent   = isNaN(toVal) ? '' : `${fmt(toVal, decimalsFor(currTo()))} ${currTo()}`;
+    function subs(fv, tv) {
+      $('subFrom').textContent = isNaN(fv) ? '' : `${fmt(fv, decimalsFor(currFrom()))} ${currFrom()}`;
+      $('subTo').textContent = isNaN(tv) ? '' : `${fmt(tv, decimalsFor(currTo()))} ${currTo()}`;
+    }
+    function renderChips() {
+      const presets = dir === 'MXN' ? [100, 500, 1000, 5000] : [10000, 50000, 100000, 500000];
+      const c = $('chips'); c.innerHTML = '';
+      presets.forEach(p => { const b = document.createElement('div'); b.className = 'chip'; b.textContent = fmt(p, 0); b.onclick = () => { lastEdited = 'from'; amtFrom.value = fmt(p, 0); convertUI(); }; c.appendChild(b); });
     }
 
-    // ---------- tasa ----------
+    /* ---------- tasa ---------- */
     function setRateUI(ts, source, ok = true) {
-      const dot = $('rateDot'), meta = $('rateMeta');
-      $('rateVal').textContent = fmt(rate, 2);
-      if (!ok) {
-        dot.className = 'dot err';
-        meta.textContent = 'Sin conexión · usando última tasa';
-        return;
-      }
-      const age = ts ? (Date.now() - ts) : Infinity;
-      const hrs = age / 3.6e6;
+      const dot = $('rateDot'), meta = $('rateMeta'); $('rateVal').textContent = fmt(rate, 2);
+      if (!ok) { dot.className = 'dot err'; meta.textContent = 'Sin conexión · usando última tasa'; return; }
+      const hrs = ts ? (Date.now() - ts) / 3.6e6 : Infinity;
       dot.className = 'dot' + (hrs > 24 ? ' stale' : '');
       let when;
       if (source === 'manual') when = 'Tasa manual';
@@ -329,125 +337,187 @@
       else when = 'Actualizada ' + new Date(ts).toLocaleDateString('es-CO');
       meta.textContent = when;
     }
-
     async function fetchRate() {
       $('refreshBtn').classList.add('loading');
       try {
         const r = await fetch('https://open.er-api.com/v6/latest/MXN');
-        if (!r.ok) throw new Error('bad');
-        const data = await r.json();
-        const cop = data && data.rates && data.rates.COP;
-        if (!cop) throw new Error('no cop');
-        rate = cop;
-        const ts = data.time_last_update_unix ? data.time_last_update_unix * 1000 : Date.now();
-        localStorage.setItem(LS_RATE, JSON.stringify({ rate, ts, source: 'api' }));
-        renderLabels();
-        setRateUI(ts, 'api', true);
-        convert();
-        toast('Tasa actualizada');
-      } catch (e) {
-        const cached = loadCached();
-        setRateUI(cached ? cached.ts : null, cached ? cached.source : null, false);
-      } finally {
-        $('refreshBtn').classList.remove('loading');
+        if (!r.ok) throw 0; const data = await r.json(); const cop = data?.rates?.COP; if (!cop) throw 0;
+        rate = cop; const ts = data.time_last_update_unix ? data.time_last_update_unix * 1000 : Date.now();
+        localStorage.setItem(LS.rate, JSON.stringify({ rate, ts, source: 'api' }));
+        renderLabels(); setRateUI(ts, 'api', true); convertUI(); renderBudget(); toast('Tasa actualizada');
+      } catch (e) { const c = loadCached(); setRateUI(c ? c.ts : null, c ? c.source : null, false); }
+      finally { $('refreshBtn').classList.remove('loading'); }
+    }
+    function loadCached() { try { const c = JSON.parse(localStorage.getItem(LS.rate)); if (c?.rate) { rate = c.rate; return c; } } catch (e) {} return null; }
+
+    /* ========== VIÁTICOS ========== */
+    function totalSpentIn(cur) { return expenses.reduce((s, e) => s + conv(e.amount, e.currency, cur), 0); }
+    function renderBudget() {
+      const area = $('budgetArea');
+      if (!budget) {
+        area.innerHTML = `<div class="budget-card" style="text-align:center">
+          <div style="font-size:40px">🧳</div>
+          <div class="budget-label" style="margin-top:6px">Aún no tienes presupuesto</div>
+          <button class="edit-budget" id="setBudgetBtn" style="margin-top:14px; padding:10px 18px; font-size:14px">Definir viáticos</button>
+        </div>`;
+        $('setBudgetBtn').onclick = openBudget;
+        $('addCard').style.display = 'none'; $('expListWrap').style.display = 'none';
+        return;
       }
+      const spent = totalSpentIn(budget.currency);
+      const remaining = budget.amount - spent;
+      const pct = budget.amount > 0 ? Math.min(100, (spent / budget.amount) * 100) : 0;
+      const d = decimalsFor(budget.currency);
+      const warn = pct >= 75 && pct < 100, danger = remaining < 0 || pct >= 100;
+      area.innerHTML = `<div class="budget-card">
+        <div class="budget-top">
+          <div>
+            <div class="budget-label">Disponible</div>
+            <div class="budget-remaining">${fmt(remaining, d)}</div>
+            <div class="budget-cur">${budget.currency}${remaining < 0 ? ' · ¡excedido!' : ''}</div>
+          </div>
+          <button class="edit-budget" id="editBudgetBtn">✏️ Editar</button>
+        </div>
+        <div class="bar"><div class="bar-fill ${danger ? 'danger' : warn ? 'warn' : ''}" style="width:${pct}%"></div></div>
+        <div class="budget-stats">
+          <div>Presupuesto<b>${fmt(budget.amount, d)} ${budget.currency}</b></div>
+          <div style="text-align:right">Gastado<b>${fmt(spent, d)} ${budget.currency}</b></div>
+        </div>
+      </div>`;
+      $('editBudgetBtn').onclick = openBudget;
+      $('addCard').style.display = 'block';
+      $('expListWrap').style.display = expenses.length ? 'block' : 'none';
+      renderExpenses();
+      updateExpHint();
     }
-
-    function loadCached() {
-      try {
-        const raw = localStorage.getItem(LS_RATE);
-        if (!raw) return null;
-        const c = JSON.parse(raw);
-        if (c && c.rate) { rate = c.rate; return c; }
-      } catch (e) {}
-      return null;
-    }
-
-    // ---------- chips ----------
-    function renderChips() {
-      const presets = dir === 'MXN' ? [100, 500, 1000, 5000] : [10000, 50000, 100000, 500000];
-      const c = $('chips');
-      c.innerHTML = '';
-      presets.forEach(p => {
-        const b = document.createElement('div');
-        b.className = 'chip';
-        b.textContent = fmt(p, 0);
-        b.onclick = () => {
-          lastEdited = 'from';
-          amtFrom.value = fmt(p, 0);
-          convert();
-        };
-        c.appendChild(b);
+    function renderExpenses() {
+      const list = $('expList');
+      if (!expenses.length) { list.innerHTML = '<div class="exp-empty">Todavía no registras gastos.</div>'; return; }
+      list.innerHTML = '';
+      [...expenses].reverse().forEach(e => {
+        const other = e.currency === 'MXN' ? 'COP' : 'MXN';
+        const convVal = conv(e.amount, e.currency, other);
+        const div = document.createElement('div'); div.className = 'exp-item';
+        div.innerHTML = `
+          <div class="exp-icon">${CURR[e.currency].flag}</div>
+          <div class="exp-main">
+            <div class="exp-note">${e.note ? escapeHtml(e.note) : 'Gasto'}</div>
+            <div class="exp-date">${new Date(e.ts).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+          <div class="exp-amts">
+            <div class="exp-orig">${fmt(e.amount, decimalsFor(e.currency))} ${e.currency}</div>
+            <div class="exp-conv">≈ ${fmt(convVal, decimalsFor(other))} ${other}</div>
+          </div>
+          <button class="exp-del" data-id="${e.id}">🗑️</button>`;
+        div.querySelector('.exp-del').onclick = () => delExpense(e.id);
+        list.appendChild(div);
       });
     }
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
-    // ---------- toast ----------
-    let toastT;
-    function toast(msg) {
-      const t = $('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      clearTimeout(toastT);
-      toastT = setTimeout(() => t.classList.remove('show'), 2000);
+    function updateExpHint() {
+      const v = parse($('expAmt').value);
+      const h = $('expHint');
+      if (isNaN(v) || !budget) { h.textContent = ''; return; }
+      const inBudgetCur = conv(v, expCur, budget.currency);
+      const other = expCur === 'MXN' ? 'COP' : 'MXN';
+      let txt = `≈ ${fmt(conv(v, expCur, other), decimalsFor(other))} ${other}`;
+      if (budget.currency !== expCur) txt += ` · descuenta ${fmt(inBudgetCur, decimalsFor(budget.currency))} ${budget.currency}`;
+      h.textContent = txt;
     }
 
-    // ---------- eventos ----------
-    amtFrom.addEventListener('input', () => { lastEdited = 'from'; convert(); });
-    amtTo.addEventListener('input', () => { lastEdited = 'to'; convert(); });
+    function addExpense() {
+      const v = parse($('expAmt').value);
+      if (isNaN(v) || v <= 0) { toast('Ingresa un monto válido'); return; }
+      expenses.push({ id: Date.now() + '' + Math.random().toString(36).slice(2, 6), amount: v, currency: expCur, note: $('expNote').value.trim(), ts: Date.now() });
+      saveExp(); $('expAmt').value = ''; $('expNote').value = '';
+      renderBudget(); toast('Gasto registrado ✓');
+    }
+    function delExpense(id) { expenses = expenses.filter(e => e.id !== id); saveExp(); renderBudget(); }
+    function saveExp() { localStorage.setItem(LS.exp, JSON.stringify(expenses)); }
 
-    $('swap').addEventListener('click', () => {
-      dir = dir === 'MXN' ? 'COP' : 'MXN';
-      localStorage.setItem(LS_DIR, dir);
-      $('swap').classList.toggle('spin');
-      // conserva el valor mostrado en "from" moviéndolo según lo último editado
-      const keep = amtFrom.value;
-      amtFrom.value = amtTo.value;
-      amtTo.value = keep;
-      lastEdited = 'from';
-      renderLabels();
-      renderChips();
-      convert();
+    /* ---------- modal presupuesto ---------- */
+    function openBudget() {
+      budgetCurTmp = budget ? budget.currency : 'MXN';
+      $('budgetCurSeg').querySelectorAll('.seg-opt').forEach(o => o.classList.toggle('active', o.dataset.cur === budgetCurTmp));
+      $('budgetInput').value = budget ? fmt(budget.amount, decimalsFor(budget.currency)) : '';
+      $('budgetOverlay').classList.add('open'); setTimeout(() => $('budgetInput').focus(), 100);
+    }
+    function closeBudget() { $('budgetOverlay').classList.remove('open'); }
+    function saveBudget() {
+      const v = parse($('budgetInput').value);
+      if (isNaN(v) || v <= 0) { toast('Ingresa un monto válido'); return; }
+      budget = { amount: v, currency: budgetCurTmp };
+      localStorage.setItem(LS.budget, JSON.stringify(budget));
+      closeBudget(); renderBudget(); toast('Presupuesto guardado ✓');
+    }
+
+    /* ---------- toast ---------- */
+    let tT; function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('show'), 2000); }
+
+    /* ---------- eventos ---------- */
+    document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+      t.classList.add('active'); $('view-' + t.dataset.view).classList.add('active');
     });
 
+    amtFrom.addEventListener('input', () => { lastEdited = 'from'; convertUI(); });
+    amtTo.addEventListener('input', () => { lastEdited = 'to'; convertUI(); });
+    $('swap').addEventListener('click', () => {
+      dir = dir === 'MXN' ? 'COP' : 'MXN'; localStorage.setItem(LS.dir, dir);
+      $('swap').classList.toggle('spin');
+      const keep = amtFrom.value; amtFrom.value = amtTo.value; amtTo.value = keep; lastEdited = 'from';
+      renderLabels(); renderChips(); convertUI();
+    });
     $('copyBtn').addEventListener('click', () => {
       if (!amtTo.value) { toast('Ingresa un monto'); return; }
       const txt = `${amtFrom.value} ${currFrom()} = ${amtTo.value} ${currTo()}`;
       navigator.clipboard?.writeText(txt).then(() => toast('Copiado ✓'), () => toast(txt));
     });
-
-    $('clearBtn').addEventListener('click', () => {
-      amtFrom.value = ''; amtTo.value = '';
-      renderSubs(NaN, NaN);
-      amtFrom.focus();
-    });
-
+    $('clearBtn').addEventListener('click', () => { amtFrom.value = ''; amtTo.value = ''; subs(NaN, NaN); amtFrom.focus(); });
     $('refreshBtn').addEventListener('click', fetchRate);
-
-    $('manualToggle').addEventListener('click', () => {
-      const m = $('manual');
-      m.classList.toggle('open');
-      if (m.classList.contains('open')) { $('manualInput').value = fmt(rate, 2); $('manualInput').focus(); }
-    });
-
-    $('manualInput').addEventListener('input', (e) => {
+    $('manualToggle').addEventListener('click', () => { const m = $('manual'); m.classList.toggle('open'); if (m.classList.contains('open')) { $('manualInput').value = fmt(rate, 2); $('manualInput').focus(); } });
+    $('manualInput').addEventListener('input', e => {
       const v = parse(e.target.value);
-      if (!isNaN(v) && v > 0) {
-        rate = v;
-        localStorage.setItem(LS_RATE, JSON.stringify({ rate, ts: Date.now(), source: 'manual' }));
-        renderLabels();
-        setRateUI(Date.now(), 'manual', true);
-        convert();
-      }
+      if (!isNaN(v) && v > 0) { rate = v; localStorage.setItem(LS.rate, JSON.stringify({ rate, ts: Date.now(), source: 'manual' })); renderLabels(); setRateUI(Date.now(), 'manual', true); convertUI(); renderBudget(); }
     });
 
-    // ---------- init ----------
+    // "Registrar como gasto" desde el convertidor
+    $('toExpenseBtn').addEventListener('click', () => {
+      const v = parse(amtFrom.value);
+      if (isNaN(v) || v <= 0) { toast('Escribe un monto primero'); return; }
+      expCur = currFrom();
+      $('expCurSeg').querySelectorAll('.seg-opt').forEach(o => o.classList.toggle('active', o.dataset.cur === expCur));
+      $('expAmt').value = fmt(v, decimalsFor(expCur));
+      document.querySelector('.tab[data-view="budget"]').click();
+      updateExpHint(); $('expNote').focus();
+      if (!budget) toast('Primero define tu presupuesto');
+    });
+
+    // viáticos: segmento moneda del gasto
+    $('expCurSeg').querySelectorAll('.seg-opt').forEach(o => o.onclick = () => {
+      expCur = o.dataset.cur; $('expCurSeg').querySelectorAll('.seg-opt').forEach(x => x.classList.toggle('active', x === o)); updateExpHint();
+    });
+    $('expAmt').addEventListener('input', updateExpHint);
+    $('addExpBtn').addEventListener('click', addExpense);
+    $('clearExp').addEventListener('click', () => { if (confirm('¿Borrar todos los gastos?')) { expenses = []; saveExp(); renderBudget(); } });
+
+    // modal
+    $('budgetCurSeg').querySelectorAll('.seg-opt').forEach(o => o.onclick = () => { budgetCurTmp = o.dataset.cur; $('budgetCurSeg').querySelectorAll('.seg-opt').forEach(x => x.classList.toggle('active', x === o)); });
+    $('budgetSave').addEventListener('click', saveBudget);
+    $('budgetCancel').addEventListener('click', closeBudget);
+    $('budgetOverlay').addEventListener('click', e => { if (e.target === $('budgetOverlay')) closeBudget(); });
+
+    /* ---------- init ---------- */
     (function init() {
-      dir = localStorage.getItem(LS_DIR) || 'MXN';
+      dir = localStorage.getItem(LS.dir) || 'MXN';
+      try { budget = JSON.parse(localStorage.getItem(LS.budget)) || null; } catch (e) { budget = null; }
+      try { expenses = JSON.parse(localStorage.getItem(LS.exp)) || []; } catch (e) { expenses = []; }
       const cached = loadCached();
-      renderLabels();
-      renderChips();
-      if (cached) setRateUI(cached.ts, cached.source, true);
-      else setRateUI(null, null, true);
+      renderLabels(); renderChips();
+      setRateUI(cached ? cached.ts : null, cached ? cached.source : null, true);
+      renderBudget();
       fetchRate();
       amtFrom.focus();
     })();
