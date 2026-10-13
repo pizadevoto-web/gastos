@@ -126,6 +126,26 @@
     .empty-budget { text-align: center; padding: 30px 20px; color: var(--muted); }
     .empty-budget .big { font-size: 40px; margin-bottom: 8px; }
 
+    .stat-card { background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 1px 6px rgba(15,23,42,0.06); margin-top: 14px; }
+    .stat-grid { display: flex; gap: 10px; }
+    .stat-tile { flex: 1; text-align: center; padding: 6px 4px; border-radius: 12px; background: var(--bg); }
+    .stat-tile .st-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; display: flex; align-items: center; justify-content: center; gap: 3px; }
+    .stat-tile .st-val { font-size: 17px; font-weight: 800; letter-spacing: -0.5px; margin-top: 4px; }
+    .stat-tile .st-cur { font-size: 10px; color: var(--muted); font-weight: 600; }
+    .stat-tile.hoy .st-val { color: var(--primary); }
+    .stat-tile.avg .st-val { color: var(--cop); }
+    .stat-tile.sug .st-val { color: var(--mxn); }
+    .stat-tile.sug.over .st-val { color: var(--danger); }
+    .projection { margin-top: 12px; font-size: 12px; font-weight: 600; border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; line-height: 1.3; }
+    .projection.ok { background: rgba(16,185,129,0.1); color: #047857; }
+    .projection.bad { background: rgba(239,68,68,0.1); color: #b91c1c; }
+    .set-dates-hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 10px; }
+    .set-dates-hint span { color: var(--primary); font-weight: 600; cursor: pointer; }
+
+    .day-group-head { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 2px 8px; }
+    .day-group-head .dg-day { font-size: 13px; font-weight: 700; color: var(--text); }
+    .day-group-head .dg-total { font-size: 12px; font-weight: 700; color: var(--muted); }
+
     .add-card { background: var(--card); border-radius: 18px; padding: 16px; box-shadow: 0 1px 6px rgba(15,23,42,0.06); margin-top: 16px; }
     .add-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
     .seg { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; margin-bottom: 10px; }
@@ -263,6 +283,11 @@
       </div>
       <label>Monto total</label>
       <input class="inp" id="budgetInput" type="text" inputmode="decimal" placeholder="0" autocomplete="off" style="font-size:22px; font-weight:700; margin-bottom:16px" />
+      <label>Fechas del viaje <span style="font-weight:400; text-transform:none">(opcional, para el sugerido por día)</span></label>
+      <div class="input-row" style="margin-bottom:16px">
+        <input class="inp" id="budgetStart" type="date" autocomplete="off" />
+        <input class="inp" id="budgetEnd" type="date" autocomplete="off" />
+      </div>
       <div class="actions">
         <button class="btn btn-ghost" id="budgetCancel">Cancelar</button>
         <button class="btn btn-primary" id="budgetSave">Guardar</button>
@@ -291,6 +316,18 @@
     function decimalsFor(c) { return c === 'MXN' ? 2 : 0; }
     // convierte "amount" de moneda a->b usando rate (COP por 1 MXN)
     function conv(amount, a, b) { if (a === b) return amount; return a === 'MXN' ? amount * rate : amount / rate; }
+    // fechas (día local, sin horas)
+    function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function parseYmd(s) { if (!s) return null; const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+    function dayDiff(a, b) { return Math.round((b - a) / 86400000); }
+    function dayLabel(s) {
+      const t = ymd(new Date());
+      const y = ymd(new Date(Date.now() - 86400000));
+      if (s === t) return 'Hoy';
+      if (s === y) return 'Ayer';
+      const d = parseYmd(s);
+      return d.toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short' });
+    }
 
     /* ========== CONVERTIDOR ========== */
     function currFrom() { return dir; }
@@ -364,27 +401,71 @@
         $('addCard').style.display = 'none'; $('expListWrap').style.display = 'none';
         return;
       }
-      const spent = totalSpentIn(budget.currency);
+      const cur = budget.currency, d = decimalsFor(cur);
+      const spent = totalSpentIn(cur);
       const remaining = budget.amount - spent;
       const pct = budget.amount > 0 ? Math.min(100, (spent / budget.amount) * 100) : 0;
-      const d = decimalsFor(budget.currency);
       const warn = pct >= 75 && pct < 100, danger = remaining < 0 || pct >= 100;
+
+      // --- cálculo de días ---
+      const nowStr = ymd(new Date());
+      const todaySpent = expenses.filter(e => ymd(new Date(e.ts)) === nowStr).reduce((s, e) => s + conv(e.amount, e.currency, cur), 0);
+      const start = parseYmd(budget.start), end = parseYmd(budget.end);
+      const now = parseYmd(nowStr);
+      let elapsed, leftIncl = null, tripDays = null;
+      if (start && end) {
+        tripDays = Math.max(1, dayDiff(start, end) + 1);
+        elapsed = Math.min(tripDays, Math.max(1, dayDiff(start, now) + 1));
+        leftIncl = Math.max(0, Math.min(tripDays, dayDiff(now, end) + 1));
+      } else if (expenses.length) {
+        const first = parseYmd([...expenses].sort((a, b) => a.ts - b.ts).map(e => ymd(new Date(e.ts)))[0]);
+        elapsed = Math.max(1, dayDiff(first, now) + 1);
+      } else { elapsed = 1; }
+      const avg = spent / elapsed;
+      const suggested = (leftIncl && leftIncl > 0) ? remaining / leftIncl : null;
+
       area.innerHTML = `<div class="budget-card">
         <div class="budget-top">
           <div>
             <div class="budget-label">Disponible</div>
             <div class="budget-remaining">${fmt(remaining, d)}</div>
-            <div class="budget-cur">${budget.currency}${remaining < 0 ? ' · ¡excedido!' : ''}</div>
+            <div class="budget-cur">${cur}${remaining < 0 ? ' · ¡excedido!' : ''}${leftIncl != null ? ' · ' + leftIncl + ' día' + (leftIncl === 1 ? '' : 's') + ' rest.' : ''}</div>
           </div>
           <button class="edit-budget" id="editBudgetBtn">✏️ Editar</button>
         </div>
         <div class="bar"><div class="bar-fill ${danger ? 'danger' : warn ? 'warn' : ''}" style="width:${pct}%"></div></div>
         <div class="budget-stats">
-          <div>Presupuesto<b>${fmt(budget.amount, d)} ${budget.currency}</b></div>
-          <div style="text-align:right">Gastado<b>${fmt(spent, d)} ${budget.currency}</b></div>
+          <div>Presupuesto<b>${fmt(budget.amount, d)} ${cur}</b></div>
+          <div style="text-align:right">Gastado<b>${fmt(spent, d)} ${cur}</b></div>
         </div>
       </div>`;
+
+      // --- tarjeta de estadísticas diarias ---
+      const overSug = suggested != null && avg > suggested;
+      let proj = '';
+      if (tripDays && spent > 0) {
+        const projected = avg * tripDays;
+        if (projected > budget.amount) {
+          proj = `<div class="projection bad">⚠️ A este ritmo gastarías ≈ ${fmt(projected, d)} ${cur} · te pasarías por ${fmt(projected - budget.amount, d)} ${cur}</div>`;
+        } else {
+          proj = `<div class="projection ok">✅ A este ritmo gastarías ≈ ${fmt(projected, d)} ${cur} · dentro del presupuesto</div>`;
+        }
+      }
+      const sugTile = suggested != null
+        ? `<div class="stat-tile sug ${overSug ? 'over' : ''}"><div class="st-label">🎯 Sugerido/día</div><div class="st-val">${fmt(suggested, d)}</div><div class="st-cur">${cur}</div></div>`
+        : '';
+      area.innerHTML += `<div class="stat-card">
+        <div class="stat-grid">
+          <div class="stat-tile hoy"><div class="st-label">🗓️ Hoy</div><div class="st-val">${fmt(todaySpent, d)}</div><div class="st-cur">${cur}</div></div>
+          <div class="stat-tile avg"><div class="st-label">📊 Prom./día</div><div class="st-val">${fmt(avg, d)}</div><div class="st-cur">${cur}</div></div>
+          ${sugTile}
+        </div>
+        ${proj}
+        ${suggested == null ? `<div class="set-dates-hint">Agrega las fechas del viaje para ver tu <span id="hintDates">sugerido por día</span>.</div>` : ''}
+      </div>`;
+
       $('editBudgetBtn').onclick = openBudget;
+      if ($('hintDates')) $('hintDates').onclick = openBudget;
       $('addCard').style.display = 'block';
       $('expListWrap').style.display = expenses.length ? 'block' : 'none';
       renderExpenses();
@@ -393,24 +474,35 @@
     function renderExpenses() {
       const list = $('expList');
       if (!expenses.length) { list.innerHTML = '<div class="exp-empty">Todavía no registras gastos.</div>'; return; }
+      const totCur = budget ? budget.currency : 'COP';
+      // agrupar por día (más reciente primero)
+      const groups = {};
+      [...expenses].sort((a, b) => b.ts - a.ts).forEach(e => { const k = ymd(new Date(e.ts)); (groups[k] = groups[k] || []).push(e); });
       list.innerHTML = '';
-      [...expenses].reverse().forEach(e => {
-        const other = e.currency === 'MXN' ? 'COP' : 'MXN';
-        const convVal = conv(e.amount, e.currency, other);
-        const div = document.createElement('div'); div.className = 'exp-item';
-        div.innerHTML = `
-          <div class="exp-icon">${CURR[e.currency].flag}</div>
-          <div class="exp-main">
-            <div class="exp-note">${e.note ? escapeHtml(e.note) : 'Gasto'}</div>
-            <div class="exp-date">${new Date(e.ts).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-          </div>
-          <div class="exp-amts">
-            <div class="exp-orig">${fmt(e.amount, decimalsFor(e.currency))} ${e.currency}</div>
-            <div class="exp-conv">≈ ${fmt(convVal, decimalsFor(other))} ${other}</div>
-          </div>
-          <button class="exp-del" data-id="${e.id}">🗑️</button>`;
-        div.querySelector('.exp-del').onclick = () => delExpense(e.id);
-        list.appendChild(div);
+      Object.keys(groups).forEach(day => {
+        const items = groups[day];
+        const dayTotal = items.reduce((s, e) => s + conv(e.amount, e.currency, totCur), 0);
+        const head = document.createElement('div'); head.className = 'day-group-head';
+        head.innerHTML = `<span class="dg-day">${dayLabel(day)}</span><span class="dg-total">${fmt(dayTotal, decimalsFor(totCur))} ${totCur}</span>`;
+        list.appendChild(head);
+        items.forEach(e => {
+          const other = e.currency === 'MXN' ? 'COP' : 'MXN';
+          const convVal = conv(e.amount, e.currency, other);
+          const div = document.createElement('div'); div.className = 'exp-item';
+          div.innerHTML = `
+            <div class="exp-icon">${CURR[e.currency].flag}</div>
+            <div class="exp-main">
+              <div class="exp-note">${e.note ? escapeHtml(e.note) : 'Gasto'}</div>
+              <div class="exp-date">${new Date(e.ts).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</div>
+            </div>
+            <div class="exp-amts">
+              <div class="exp-orig">${fmt(e.amount, decimalsFor(e.currency))} ${e.currency}</div>
+              <div class="exp-conv">≈ ${fmt(convVal, decimalsFor(other))} ${other}</div>
+            </div>
+            <button class="exp-del" data-id="${e.id}">🗑️</button>`;
+          div.querySelector('.exp-del').onclick = () => delExpense(e.id);
+          list.appendChild(div);
+        });
       });
     }
     function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -441,13 +533,17 @@
       budgetCurTmp = budget ? budget.currency : 'MXN';
       $('budgetCurSeg').querySelectorAll('.seg-opt').forEach(o => o.classList.toggle('active', o.dataset.cur === budgetCurTmp));
       $('budgetInput').value = budget ? fmt(budget.amount, decimalsFor(budget.currency)) : '';
+      $('budgetStart').value = budget?.start || '';
+      $('budgetEnd').value = budget?.end || '';
       $('budgetOverlay').classList.add('open'); setTimeout(() => $('budgetInput').focus(), 100);
     }
     function closeBudget() { $('budgetOverlay').classList.remove('open'); }
     function saveBudget() {
       const v = parse($('budgetInput').value);
       if (isNaN(v) || v <= 0) { toast('Ingresa un monto válido'); return; }
-      budget = { amount: v, currency: budgetCurTmp };
+      let start = $('budgetStart').value || '', end = $('budgetEnd').value || '';
+      if (start && end && end < start) { const t = start; start = end; end = t; }
+      budget = { amount: v, currency: budgetCurTmp, start, end };
       localStorage.setItem(LS.budget, JSON.stringify(budget));
       closeBudget(); renderBudget(); toast('Presupuesto guardado ✓');
     }
